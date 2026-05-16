@@ -1,0 +1,10 @@
+import { Module } from '@nestjs/common';
+import { FlatController } from './flat.controller';
+import { FlatService } from './flat.service';
+
+@Module({
+  controllers: [FlatController],
+  providers: [FlatService],
+  exports: [FlatService],
+})
+export class FlatModule {}

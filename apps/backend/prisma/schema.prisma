@@ -1,0 +1,334 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  FLAT_ASSOCIATION
+  SECURITY
+  RESIDENT
+}
+
+enum FlatStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum GatePassStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ENTERED
+  EXITED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+// ─── Flat (Tenant) ────────────────────────────────────────────────────────────
+
+model Flat {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  subdomain      String?    @unique
+  address        String?
+  logoUrl        String?
+  themeColor     String?    @default("#3B82F6")
+  contactPerson  String?
+  contactPhone   String?
+  status         FlatStatus @default(ACTIVE)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  users           User[]
+  groceryItems    GroceryItem[]
+  groceryOrders   GroceryOrder[]
+  unavailableReqs UnavailableItemRequest[]
+  hotels          Hotel[]
+  foodOrders      FoodOrder[]
+  services        Service[]
+  timeSlots       TimeSlot[]
+  serviceBookings ServiceBooking[]
+  gatePasses      GatePass[]
+
+  @@map("flats")
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  flatId       String?
+  flat         Flat?    @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         Role
+  flatNumber   String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  groceryOrders      GroceryOrder[]
+  unavailableReqs    UnavailableItemRequest[]
+  foodOrders         FoodOrder[]
+  serviceBookings    ServiceBooking[]
+  gatePassRequests   GatePass[]     @relation("ResidentGatePasses")
+  approvedGatePasses GatePass[]     @relation("ApprovedBy")
+
+  @@map("users")
+}
+
+// ─── Grocery ──────────────────────────────────────────────────────────────────
+
+model GroceryItem {
+  id          String   @id @default(cuid())
+  flatId      String
+  flat        Flat     @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?
+  category    String?
+  stockStatus String   @default("IN_STOCK")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems      GroceryOrderItem[]
+  unavailableReqs UnavailableItemRequest[]
+
+  @@map("grocery_items")
+}
+
+model GroceryOrder {
+  id          String      @id @default(cuid())
+  flatId      String
+  flat        Flat        @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  residentId  String
+  resident    User        @relation(fields: [residentId], references: [id])
+  status      OrderStatus @default(PENDING)
+  totalAmount Decimal     @db.Decimal(10, 2)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items GroceryOrderItem[]
+
+  @@map("grocery_orders")
+}
+
+model GroceryOrderItem {
+  id               String       @id @default(cuid())
+  orderId          String
+  order            GroceryOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  groceryItemId    String
+  groceryItem      GroceryItem  @relation(fields: [groceryItemId], references: [id])
+  itemNameSnapshot String
+  priceSnapshot    Decimal      @db.Decimal(10, 2)
+  quantity         Int
+  subtotal         Decimal      @db.Decimal(10, 2)
+
+  @@map("grocery_order_items")
+}
+
+model UnavailableItemRequest {
+  id            String        @id @default(cuid())
+  flatId        String
+  flat          Flat          @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  residentId    String
+  resident      User          @relation(fields: [residentId], references: [id])
+  groceryItemId String?
+  groceryItem   GroceryItem?  @relation(fields: [groceryItemId], references: [id])
+  itemName      String
+  quantity      String?
+  notes         String?
+  status        RequestStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("unavailable_item_requests")
+}
+
+// ─── Hotels & Food ────────────────────────────────────────────────────────────
+
+model Hotel {
+  id          String   @id @default(cuid())
+  flatId      String
+  flat        Flat     @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  imageUrl    String?
+  phone       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  foodItems  FoodItem[]
+  foodOrders FoodOrder[]
+
+  @@map("hotels")
+}
+
+model FoodItem {
+  id          String   @id @default(cuid())
+  flatId      String
+  hotelId     String
+  hotel       Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?
+  category    String?
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems FoodOrderItem[]
+
+  @@map("food_items")
+}
+
+model FoodOrder {
+  id          String      @id @default(cuid())
+  flatId      String
+  flat        Flat        @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  hotelId     String
+  hotel       Hotel       @relation(fields: [hotelId], references: [id])
+  residentId  String
+  resident    User        @relation(fields: [residentId], references: [id])
+  status      OrderStatus @default(PENDING)
+  totalAmount Decimal     @db.Decimal(10, 2)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items FoodOrderItem[]
+
+  @@map("food_orders")
+}
+
+model FoodOrderItem {
+  id               String    @id @default(cuid())
+  orderId          String
+  order            FoodOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  foodItemId       String
+  foodItem         FoodItem  @relation(fields: [foodItemId], references: [id])
+  itemNameSnapshot String
+  priceSnapshot    Decimal   @db.Decimal(10, 2)
+  quantity         Int
+  subtotal         Decimal   @db.Decimal(10, 2)
+
+  @@map("food_order_items")
+}
+
+// ─── Services & Bookings ──────────────────────────────────────────────────────
+
+model Service {
+  id          String   @id @default(cuid())
+  flatId      String
+  flat        Flat     @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  imageUrl    String?
+  basePrice   Decimal? @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  timeSlots TimeSlot[]
+  bookings  ServiceBooking[]
+
+  @@map("services")
+}
+
+model TimeSlot {
+  id              String   @id @default(cuid())
+  flatId          String
+  flat            Flat     @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  serviceId       String
+  service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  date            String
+  startTime       String
+  endTime         String
+  maxBookings     Int      @default(1)
+  currentBookings Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bookings ServiceBooking[]
+
+  @@map("time_slots")
+}
+
+model ServiceBooking {
+  id         String        @id @default(cuid())
+  flatId     String
+  flat       Flat          @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  serviceId  String
+  service    Service       @relation(fields: [serviceId], references: [id])
+  timeSlotId String
+  timeSlot   TimeSlot      @relation(fields: [timeSlotId], references: [id])
+  residentId String
+  resident   User          @relation(fields: [residentId], references: [id])
+  status     BookingStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@map("service_bookings")
+}
+
+// ─── Gate Pass ────────────────────────────────────────────────────────────────
+
+model GatePass {
+  id                 String         @id @default(cuid())
+  flatId             String
+  flat               Flat           @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  residentId         String
+  resident           User           @relation("ResidentGatePasses", fields: [residentId], references: [id])
+  visitorName        String
+  visitorPhone       String?
+  purpose            String?
+  expectedVisitDate  String
+  expectedVisitTime  String?
+  status             GatePassStatus @default(PENDING)
+  approvedBySecurityId String?
+  approvedBy         User?          @relation("ApprovedBy", fields: [approvedBySecurityId], references: [id])
+  entryTime          DateTime?
+  exitTime           DateTime?
+  notes              String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@map("gate_passes")
+}

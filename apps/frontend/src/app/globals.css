@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  * {
+    @apply border-slate-200;
+  }
+
+  html {
+    @apply scroll-smooth bg-slate-50;
+  }
+
+  body {
+    @apply min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef6f5_46%,#f8fafc_100%)] font-sans text-slate-900 antialiased;
+  }
+
+  ::selection {
+    @apply bg-cyan-200 text-slate-950;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2 font-semibold text-white shadow-sm shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2 font-semibold text-white shadow-sm shadow-rose-600/15 transition-colors duration-200 hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .input-field {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10;
+  }
+  .card {
+    @apply rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm shadow-slate-900/5 backdrop-blur;
+  }
+  .panel {
+    @apply rounded-3xl border border-white/70 bg-white/85 shadow-xl shadow-slate-900/5 backdrop-blur;
+  }
+  .surface {
+    @apply border border-slate-200/80 bg-white/80 shadow-sm shadow-slate-900/5 backdrop-blur;
+  }
+  .metric-card {
+    @apply rounded-2xl border border-white/70 bg-white/90 p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-md hover:shadow-slate-900/10;
+  }
+}
