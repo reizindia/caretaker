@@ -1,20 +1,21 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
 import PageHeader from '@/components/shared/PageHeader';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
+import ImageUploadField from '@/components/shared/ImageUploadField';
 import toast from 'react-hot-toast';
+import { useAdminFlatStore } from '@/lib/store/admin-flat.store';
 
-function HotelForm({ hotel, flatSlug, onClose, onSave }: any) {
+function HotelForm({ hotel, onClose, onSave }: any) {
   const [form, setForm] = useState({ name: hotel?.name || '', description: hotel?.description || '', phone: hotel?.phone || '', imageUrl: hotel?.imageUrl || '', isActive: hotel?.isActive ?? true });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const headers = { 'X-Tenant-Slug': flatSlug };
     try {
-      if (hotel) { await apiClient.patch(`/hotels/${hotel.id}`, form, { headers }); toast.success('Updated'); }
-      else { await apiClient.post('/hotels', form, { headers }); toast.success('Created'); }
+      if (hotel) { await apiClient.patch(`/hotels/${hotel.id}`, form); toast.success('Updated'); }
+      else { await apiClient.post('/hotels', form); toast.success('Created'); }
       onSave(); onClose();
     } catch (err: any) { toast.error(err?.response?.data?.message || 'Error'); }
   };
@@ -26,7 +27,7 @@ function HotelForm({ hotel, flatSlug, onClose, onSave }: any) {
           <div><label className="block text-sm font-medium mb-1">Name *</label><input className="input-field" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div><label className="block text-sm font-medium mb-1">Description</label><textarea className="input-field" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           <div><label className="block text-sm font-medium mb-1">Phone</label><input className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium mb-1">Image URL</label><input className="input-field" type="url" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} /></div>
+          <ImageUploadField label="Hotel Image" value={form.imageUrl} folder="hotels" onChange={(imageUrl) => setForm({ ...form, imageUrl })} />
           <div className="flex gap-3 pt-2"><button type="submit" className="btn-primary flex-1">Save</button><button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button></div>
         </form>
       </div>
@@ -34,14 +35,13 @@ function HotelForm({ hotel, flatSlug, onClose, onSave }: any) {
   );
 }
 
-function FoodItemForm({ hotel, flatSlug, item, onClose, onSave }: any) {
+function FoodItemForm({ hotel, item, onClose, onSave }: any) {
   const [form, setForm] = useState({ name: item?.name || '', description: item?.description || '', price: item?.price || '', category: item?.category || '', imageUrl: item?.imageUrl || '', isAvailable: item?.isAvailable ?? true });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const headers = { 'X-Tenant-Slug': flatSlug };
     try {
-      if (item) { await apiClient.patch(`/foods/${item.id}`, form, { headers }); toast.success('Updated'); }
-      else { await apiClient.post(`/hotels/${hotel.id}/foods`, form, { headers }); toast.success('Created'); }
+      if (item) { await apiClient.patch(`/foods/${item.id}`, form); toast.success('Updated'); }
+      else { await apiClient.post(`/hotels/${hotel.id}/foods`, form); toast.success('Created'); }
       onSave(); onClose();
     } catch (err: any) { toast.error(err?.response?.data?.message || 'Error'); }
   };
@@ -56,7 +56,7 @@ function FoodItemForm({ hotel, flatSlug, item, onClose, onSave }: any) {
           </div>
           <div><label className="block text-sm font-medium mb-1">Description</label><textarea className="input-field" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           <div><label className="block text-sm font-medium mb-1">Category</label><input className="input-field" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium mb-1">Image URL</label><input className="input-field" type="url" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} /></div>
+          <ImageUploadField label="Food Image" value={form.imageUrl} folder="food" onChange={(imageUrl) => setForm({ ...form, imageUrl })} />
           <div className="flex gap-3 pt-2"><button type="submit" className="btn-primary flex-1">Save</button><button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button></div>
         </form>
       </div>
@@ -65,35 +65,38 @@ function FoodItemForm({ hotel, flatSlug, item, onClose, onSave }: any) {
 }
 
 export default function AdminHotelsPage() {
-  const [flatSlug, setFlatSlug] = useState('');
   const [showHotelForm, setShowHotelForm] = useState(false);
   const [editHotel, setEditHotel] = useState<any>(null);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
   const [showFoodForm, setShowFoodForm] = useState(false);
   const [editFood, setEditFood] = useState<any>(null);
+  const { selectedFlat } = useAdminFlatStore();
   const queryClient = useQueryClient();
 
-  const { data: flatsData } = useQuery({ queryKey: ['flats-select'], queryFn: () => apiClient.get('/flats').then((r) => r.data) });
+  useEffect(() => {
+    setSelectedHotel(null);
+    setEditFood(null);
+    setShowFoodForm(false);
+  }, [selectedFlat?.slug]);
+
   const { data: hotels, isLoading } = useQuery({
-    queryKey: ['hotels-admin', flatSlug],
-    queryFn: () => apiClient.get('/hotels', { headers: { 'X-Tenant-Slug': flatSlug } }).then((r) => r.data),
-    enabled: !!flatSlug,
+    queryKey: ['hotels-admin', selectedFlat?.slug],
+    queryFn: () => apiClient.get('/hotels').then((r) => r.data),
+    enabled: !!selectedFlat?.slug,
   });
   const { data: foods, isLoading: foodsLoading } = useQuery({
-    queryKey: ['foods-admin', selectedHotel?.id],
-    queryFn: () => apiClient.get(`/hotels/${selectedHotel.id}/foods`, { headers: { 'X-Tenant-Slug': flatSlug } }).then((r) => r.data),
-    enabled: !!selectedHotel && !!flatSlug,
+    queryKey: ['foods-admin', selectedFlat?.slug, selectedHotel?.id],
+    queryFn: () => apiClient.get(`/hotels/${selectedHotel.id}/foods`).then((r) => r.data),
+    enabled: !!selectedHotel && !!selectedFlat?.slug,
   });
 
   return (
     <div>
-      <PageHeader title="Hotels & Food" action={flatSlug ? <button className="btn-primary" onClick={() => { setEditHotel(null); setShowHotelForm(true); }}>+ Add Hotel</button> : undefined} />
-      {showHotelForm && <HotelForm hotel={editHotel} flatSlug={flatSlug} onClose={() => { setShowHotelForm(false); setEditHotel(null); }} onSave={() => queryClient.invalidateQueries({ queryKey: ['hotels-admin'] })} />}
-      {showFoodForm && <FoodItemForm hotel={selectedHotel} flatSlug={flatSlug} item={editFood} onClose={() => { setShowFoodForm(false); setEditFood(null); }} onSave={() => queryClient.invalidateQueries({ queryKey: ['foods-admin'] })} />}
+      <PageHeader title="Hotels & Food" description={selectedFlat ? `Managing ${selectedFlat.name}` : 'Select an active flat from the sidebar'} action={selectedFlat ? <button className="btn-primary" onClick={() => { setEditHotel(null); setShowHotelForm(true); }}>+ Add Hotel</button> : undefined} />
+      {showHotelForm && <HotelForm hotel={editHotel} onClose={() => { setShowHotelForm(false); setEditHotel(null); }} onSave={() => queryClient.invalidateQueries({ queryKey: ['hotels-admin', selectedFlat?.slug] })} />}
+      {showFoodForm && <FoodItemForm hotel={selectedHotel} item={editFood} onClose={() => { setShowFoodForm(false); setEditFood(null); }} onSave={() => queryClient.invalidateQueries({ queryKey: ['foods-admin', selectedFlat?.slug, selectedHotel?.id] })} />}
 
-      <div className="mb-4"><select className="input-field w-auto" value={flatSlug} onChange={(e) => { setFlatSlug(e.target.value); setSelectedHotel(null); }}><option value="">Select a flat</option>{flatsData?.flats?.map((f: any) => <option key={f.id} value={f.slug}>{f.name}</option>)}</select></div>
-
-      {!flatSlug ? <EmptyState title="Select a flat to manage hotels" /> : isLoading ? <LoadingSpinner /> : (
+      {!selectedFlat ? <EmptyState title="Select a flat from the sidebar" /> : isLoading ? <LoadingSpinner /> : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h2 className="font-semibold mb-3">Hotels</h2>

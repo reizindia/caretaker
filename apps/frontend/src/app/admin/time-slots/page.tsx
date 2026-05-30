@@ -1,35 +1,39 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
+import { useAdminFlatStore } from '@/lib/store/admin-flat.store';
 import PageHeader from '@/components/shared/PageHeader';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
 import toast from 'react-hot-toast';
 
 export default function AdminTimeSlotsPage() {
-  const [flatSlug, setFlatSlug] = useState('');
+  const { selectedFlat } = useAdminFlatStore();
   const [serviceId, setServiceId] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ serviceId: '', date: '', startTime: '', endTime: '', maxBookings: 3, isActive: true });
   const queryClient = useQueryClient();
 
-  const { data: flatsData } = useQuery({ queryKey: ['flats-select'], queryFn: () => apiClient.get('/flats').then((r) => r.data) });
+  useEffect(() => {
+    setServiceId('');
+  }, [selectedFlat?.slug]);
+
   const { data: services } = useQuery({
-    queryKey: ['services-select', flatSlug],
-    queryFn: () => apiClient.get('/services', { headers: { 'X-Tenant-Slug': flatSlug } }).then((r) => r.data),
-    enabled: !!flatSlug,
+    queryKey: ['services-select', selectedFlat?.slug],
+    queryFn: () => apiClient.get('/services').then((r) => r.data),
+    enabled: !!selectedFlat?.slug,
   });
   const { data: slots, isLoading } = useQuery({
-    queryKey: ['timeslots-admin', flatSlug, serviceId],
-    queryFn: () => apiClient.get(`/time-slots?serviceId=${serviceId}`, { headers: { 'X-Tenant-Slug': flatSlug } }).then((r) => r.data),
-    enabled: !!flatSlug && !!serviceId,
+    queryKey: ['timeslots-admin', selectedFlat?.slug, serviceId],
+    queryFn: () => apiClient.get(`/time-slots?serviceId=${serviceId}`).then((r) => r.data),
+    enabled: !!selectedFlat?.slug && !!serviceId,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiClient.post('/time-slots', { ...form, serviceId }, { headers: { 'X-Tenant-Slug': flatSlug } });
+      await apiClient.post('/time-slots', { ...form, serviceId });
       toast.success('Time slot created');
       setShowForm(false);
       queryClient.invalidateQueries({ queryKey: ['timeslots-admin'] });
@@ -38,7 +42,11 @@ export default function AdminTimeSlotsPage() {
 
   return (
     <div>
-      <PageHeader title="Time Slots" action={flatSlug && serviceId ? <button className="btn-primary" onClick={() => setShowForm(true)}>+ Add Time Slot</button> : undefined} />
+      <PageHeader
+        title="Time Slots"
+        description={selectedFlat ? `Managing ${selectedFlat.name}` : 'Select an active flat from the sidebar'}
+        action={selectedFlat && serviceId ? <button className="btn-primary" onClick={() => setShowForm(true)}>+ Add Time Slot</button> : undefined}
+      />
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
@@ -57,12 +65,11 @@ export default function AdminTimeSlotsPage() {
       )}
 
       <div className="flex gap-3 mb-4">
-        <select className="input-field w-auto" value={flatSlug} onChange={(e) => { setFlatSlug(e.target.value); setServiceId(''); }}><option value="">Select a flat</option>{flatsData?.flats?.map((f: any) => <option key={f.id} value={f.slug}>{f.name}</option>)}</select>
-        {flatSlug && <select className="input-field w-auto" value={serviceId} onChange={(e) => setServiceId(e.target.value)}><option value="">Select service</option>{services?.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>}
+        {selectedFlat && <select className="input-field w-auto" value={serviceId} onChange={(e) => setServiceId(e.target.value)}><option value="">Select service</option>{services?.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>}
       </div>
 
-      {!flatSlug || !serviceId ? <EmptyState title="Select a flat and service" /> : isLoading ? <LoadingSpinner /> : !slots?.length ? <EmptyState title="No time slots" /> : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {!selectedFlat ? <EmptyState title="Select a flat from the sidebar" /> : !serviceId ? <EmptyState title="Select a service" /> : isLoading ? <LoadingSpinner /> : !slots?.length ? <EmptyState title="No time slots" /> : (
+        <div className="table-scroll">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b"><tr>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Date</th>

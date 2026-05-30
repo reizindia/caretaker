@@ -106,7 +106,7 @@ export default function ResidentsPage() {
       </div>
 
       {!data?.users?.length ? <EmptyState title="No residents found" /> : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="table-scroll">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>

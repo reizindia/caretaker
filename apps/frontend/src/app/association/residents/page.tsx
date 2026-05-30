@@ -13,7 +13,7 @@ export default function AssociationResidentsPage() {
     <div>
       <PageHeader title="Residents" />
       {isLoading ? <LoadingSpinner /> : !data?.users?.length ? <EmptyState title="No residents registered" /> : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="table-scroll">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b"><tr>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Name</th>

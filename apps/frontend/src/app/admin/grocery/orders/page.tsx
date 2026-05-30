@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
+import { useAdminFlatStore } from '@/lib/store/admin-flat.store';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
@@ -9,18 +9,17 @@ import EmptyState from '@/components/shared/EmptyState';
 import toast from 'react-hot-toast';
 
 export default function GroceryOrdersPage() {
-  const [flatSlug, setFlatSlug] = useState('');
+  const { selectedFlat } = useAdminFlatStore();
   const queryClient = useQueryClient();
-  const { data: flatsData } = useQuery({ queryKey: ['flats-select'], queryFn: () => apiClient.get('/flats').then((r) => r.data) });
   const { data, isLoading } = useQuery({
-    queryKey: ['grocery-orders-admin', flatSlug],
-    queryFn: () => apiClient.get('/grocery/orders', { headers: { 'X-Tenant-Slug': flatSlug } }).then((r) => r.data),
-    enabled: !!flatSlug,
+    queryKey: ['grocery-orders-admin', selectedFlat?.slug],
+    queryFn: () => apiClient.get('/grocery/orders').then((r) => r.data),
+    enabled: !!selectedFlat?.slug,
   });
 
   const updateStatus = async (orderId: string, status: string) => {
     try {
-      await apiClient.patch(`/grocery/orders/${orderId}/status`, { status }, { headers: { 'X-Tenant-Slug': flatSlug } });
+      await apiClient.patch(`/grocery/orders/${orderId}/status`, { status });
       toast.success('Status updated');
       queryClient.invalidateQueries({ queryKey: ['grocery-orders-admin'] });
     } catch { toast.error('Failed'); }
@@ -28,14 +27,8 @@ export default function GroceryOrdersPage() {
 
   return (
     <div>
-      <PageHeader title="Grocery Orders" />
-      <div className="mb-4">
-        <select className="input-field w-auto" value={flatSlug} onChange={(e) => setFlatSlug(e.target.value)}>
-          <option value="">Select a flat</option>
-          {flatsData?.flats?.map((f: any) => <option key={f.id} value={f.slug}>{f.name}</option>)}
-        </select>
-      </div>
-      {!flatSlug ? <EmptyState title="Select a flat to view orders" /> : isLoading ? <LoadingSpinner /> : !data?.orders?.length ? <EmptyState title="No orders" /> : (
+      <PageHeader title="Grocery Orders" description={selectedFlat ? `Managing ${selectedFlat.name}` : 'Select an active flat from the sidebar'} />
+      {!selectedFlat ? <EmptyState title="Select a flat from the sidebar" /> : isLoading ? <LoadingSpinner /> : !data?.orders?.length ? <EmptyState title="No orders" /> : (
         <div className="space-y-3">
           {data.orders.map((order: any) => (
             <div key={order.id} className="card">

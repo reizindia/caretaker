@@ -6,7 +6,12 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
+import ImageUploadField from '@/components/shared/ImageUploadField';
 import toast from 'react-hot-toast';
+import { Building2 } from 'lucide-react';
+
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || '';
+const tenantUrl = (slug: string) => appDomain ? `${slug}.${appDomain}` : slug;
 
 function FlatForm({ flat, onClose, onSave }: { flat?: any; onClose: () => void; onSave: () => void }) {
   const [form, setForm] = useState({
@@ -16,6 +21,7 @@ function FlatForm({ flat, onClose, onSave }: { flat?: any; onClose: () => void; 
     contactPerson: flat?.contactPerson || '',
     contactPhone: flat?.contactPhone || '',
     logoUrl: flat?.logoUrl || '',
+    imageUrl: flat?.imageUrl || '',
     themeColor: flat?.themeColor || '#3B82F6',
     status: flat?.status || 'ACTIVE',
   });
@@ -28,7 +34,7 @@ function FlatForm({ flat, onClose, onSave }: { flat?: any; onClose: () => void; 
         toast.success('Flat updated');
       } else {
         await apiClient.post('/flats', form);
-        toast.success('Flat created! URL: ' + form.slug + '.caretakerapp.com');
+        toast.success('Flat created: ' + tenantUrl(form.slug));
       }
       onSave();
       onClose();
@@ -38,20 +44,36 @@ function FlatForm({ flat, onClose, onSave }: { flat?: any; onClose: () => void; 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-950/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-slate-950/20">
+        <div className="relative h-36 overflow-hidden rounded-t-2xl bg-slate-950">
+          {form.imageUrl ? (
+            <img src={form.imageUrl} alt={form.name || 'Apartment'} className="absolute inset-0 h-full w-full object-cover opacity-80" />
+          ) : (
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f172a,#164e63)]" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+          <div className="absolute bottom-4 left-6 flex items-center gap-3 text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
+              <Building2 size={22} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">{flat ? 'Edit Flat' : 'Add New Flat'}</h2>
+              <p className="text-xs font-medium text-white/70">Apartment profile and branding</p>
+            </div>
+          </div>
+        </div>
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">{flat ? 'Edit Flat' : 'Add New Flat'}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium mb-1">Apartment Name *</label>
                 <input className="input-field" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Slug / Subdomain *</label>
-                <input className="input-field" required value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} placeholder="e.g. greenview" />
-                {form.slug && <p className="text-xs text-blue-600 mt-1">URL: {form.slug}.caretakerapp.com</p>}
+                <input className="input-field" required value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })} placeholder="e.g. sunrise-towers" />
+                {form.slug && <p className="text-xs text-blue-600 mt-1">URL: {tenantUrl(form.slug)}</p>}
               </div>
             </div>
             <div>
@@ -68,16 +90,14 @@ function FlatForm({ flat, onClose, onSave }: { flat?: any; onClose: () => void; 
                 <input className="input-field" value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Logo URL</label>
-                <input className="input-field" type="url" value={form.logoUrl} onChange={(e) => setForm({ ...form, logoUrl: e.target.value })} />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <ImageUploadField label="Flat Logo" value={form.logoUrl} folder="flats/logos" onChange={(logoUrl) => setForm({ ...form, logoUrl })} helperText="Shown where flat branding is used" />
               <div>
                 <label className="block text-sm font-medium mb-1">Theme Color</label>
                 <input className="input-field" type="color" value={form.themeColor} onChange={(e) => setForm({ ...form, themeColor: e.target.value })} />
               </div>
             </div>
+            <ImageUploadField label="Flat Image" value={form.imageUrl} folder="flats/images" onChange={(imageUrl) => setForm({ ...form, imageUrl })} helperText="Shown on login pages and logged-in top bars" />
             <div>
               <label className="block text-sm font-medium mb-1">Status</label>
               <select className="input-field" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
@@ -142,7 +162,7 @@ export default function FlatsPage() {
       {!data?.flats?.length ? (
         <EmptyState title="No flats yet" description="Add your first apartment to get started" />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="table-scroll">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
@@ -159,14 +179,18 @@ export default function FlatsPage() {
                 <tr key={flat.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: flat.themeColor || '#3B82F6' }}>
-                        {flat.name[0]}
-                      </div>
+                      {flat.imageUrl ? (
+                        <img src={flat.imageUrl} alt={flat.name} className="h-9 w-9 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: flat.themeColor || '#3B82F6' }}>
+                          {flat.name[0]}
+                        </div>
+                      )}
                       <span className="font-medium">{flat.name}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-blue-600 text-xs">{flat.slug}.caretakerapp.com</div>
+                    <div className="text-blue-600 text-xs">{tenantUrl(flat.slug)}</div>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{flat.address || '-'}</td>
                   <td className="px-4 py-3 text-gray-500">{flat.contactPerson || '-'}</td>

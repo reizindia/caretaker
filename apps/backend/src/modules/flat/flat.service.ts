@@ -7,6 +7,12 @@ import { FlatStatus } from '@prisma/client';
 export class FlatService {
   constructor(private prisma: PrismaService) {}
 
+  private tenantDomain(slug: string) {
+    const domain = process.env.APP_DOMAIN || process.env.NEXT_PUBLIC_APP_DOMAIN;
+    if (!domain) throw new Error('APP_DOMAIN or NEXT_PUBLIC_APP_DOMAIN must be set');
+    return `${slug}.${domain}`;
+  }
+
   async findAll(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     const [flats, total] = await Promise.all([
@@ -37,7 +43,7 @@ export class FlatService {
     return this.prisma.flat.create({
       data: {
         ...dto,
-        subdomain: `${dto.slug}.caretakerapp.com`,
+        subdomain: this.tenantDomain(dto.slug),
       },
     });
   }
@@ -52,7 +58,7 @@ export class FlatService {
       where: { id },
       data: {
         ...dto,
-        ...(dto.slug ? { subdomain: `${dto.slug}.caretakerapp.com` } : {}),
+        ...(dto.slug ? { subdomain: this.tenantDomain(dto.slug) } : {}),
       },
     });
   }

@@ -1,21 +1,46 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
 
+function requiredEnv(name: string) {
+  const value = process.env[name];
+  if (!value && process.env.NODE_ENV === 'production') {
+    throw new Error(`${name} must be set in production`);
+  }
+  return value;
+}
+
 async function bootstrap() {
+  requiredEnv('DATABASE_URL');
+  requiredEnv('JWT_SECRET');
+  requiredEnv('CORS_ORIGIN');
+
   const app = await NestFactory.create(AppModule);
 
   app.use(helmet());
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.enableCors({
     origin: (origin, callback) => {
-      const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'];
-      const wildcardPattern = /^https?:\/\/[a-zA-Z0-9-]+\.caretakerapp\.com$/;
-      if (!origin || allowedOrigins.includes(origin) || wildcardPattern.test(origin)) {
+      const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      const isLocalhost = origin && (
+        origin.startsWith('http://localhost:') ||
+        origin.startsWith('https://localhost:') ||
+        origin === 'http://localhost' ||
+        origin === 'https://localhost' ||
+        /\.localhost(:\d+)?$/.test(origin)
+      );
+
+      if (!origin || allowedOrigins.includes(origin) || isLocalhost) {
         callback(null, true);
       } else {
-        callback(null, true); // Allow all in dev; tighten in prod
+        callback(new Error(`CORS blocked origin: ${origin}`), false);
       }
     },
     credentials: true,
@@ -35,6 +60,6 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`🚀 Caretaker API running on http://localhost:${port}/api`);
+  console.log(`Caretaker API listening on port ${port}`);
 }
 bootstrap();

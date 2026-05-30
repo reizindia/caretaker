@@ -1,6 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
+
+function requiredStorageEnv(name: string) {
+  const value = process.env[name];
+  if (!value && process.env.NODE_ENV === 'production') {
+    throw new Error(`${name} must be set for production uploads`);
+  }
+  return value || '';
+}
 
 @Injectable()
 export class StorageService {
@@ -9,22 +17,33 @@ export class StorageService {
   private publicUrl: string;
 
   constructor() {
-    this.bucket = process.env.STORAGE_BUCKET_NAME || 'caretaker-uploads';
-    this.publicUrl = process.env.STORAGE_PUBLIC_URL || '';
+    this.bucket = requiredStorageEnv('STORAGE_BUCKET_NAME') || 'caretaker-uploads';
+    this.publicUrl = requiredStorageEnv('STORAGE_PUBLIC_URL');
 
     this.s3 = new S3Client({
       region: process.env.STORAGE_REGION || 'auto',
-      endpoint: process.env.STORAGE_ENDPOINT,
+      endpoint: requiredStorageEnv('STORAGE_ENDPOINT') || undefined,
+      forcePathStyle: true,
       credentials: {
-        accessKeyId: process.env.STORAGE_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY || '',
+        accessKeyId: requiredStorageEnv('STORAGE_ACCESS_KEY_ID'),
+        secretAccessKey: requiredStorageEnv('STORAGE_SECRET_ACCESS_KEY'),
       },
     });
   }
 
   async uploadFile(file: Express.Multer.File, folder = 'uploads'): Promise<string> {
-    const ext = file.originalname.split('.').pop();
-    const key = `${folder}/${uuidv4()}.${ext}`;
+    if (
+      !process.env.STORAGE_ENDPOINT ||
+      !process.env.STORAGE_ACCESS_KEY_ID ||
+      !process.env.STORAGE_SECRET_ACCESS_KEY ||
+      !this.publicUrl
+    ) {
+      throw new ServiceUnavailableException('Image storage is not configured');
+    }
+
+    const ext = file.originalname.split('.').pop() || 'jpg';
+    const safeFolder = folder.replace(/[^a-zA-Z0-9/_-]/g, '').replace(/^\/+|\/+$/g, '') || 'uploads';
+    const key = `${safeFolder}/${uuidv4()}.${ext}`;
 
     await this.s3.send(
       new PutObjectCommand({
@@ -35,6 +54,6 @@ export class StorageService {
       }),
     );
 
-    return `${this.publicUrl}/${key}`;
+    return `${this.publicUrl.replace(/\/+$/g, '')}/${key}`;
   }
 }

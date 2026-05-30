@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import { Poppins } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-poppins',
+});
 
 export const metadata: Metadata = {
   title: 'CareTaker',
@@ -19,9 +26,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={poppins.variable}>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body>

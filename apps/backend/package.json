@@ -8,13 +8,9 @@
     "start": "node dist/main",
     "start:prod": "node dist/main",
     "db:migrate": "npx prisma migrate dev",
-    "db:seed": "npx ts-node prisma/seed.ts",
     "db:studio": "npx prisma studio",
     "db:generate": "npx prisma generate",
     "start:dev": "nest start --watch"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

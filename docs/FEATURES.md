@@ -29,7 +29,7 @@ End user. Can order groceries, food, book services, and request gate passes.
 
 ### 2. Multi-Tenant System
 
-- Each apartment gets a unique subdomain (e.g., `abc.caretakerapp.com`)
+- Each apartment gets a unique production subdomain
 - Automatic tenant detection from URL
 - Local dev fallback: `?tenant=slug` query parameter
 - Per-tenant branding: logo, theme color, flat name
@@ -186,7 +186,7 @@ End user. Can order groceries, food, book services, and request gate passes.
 - Complete project documentation (inline page)
 - Roles and access matrix
 - Multi-tenant system explanation
-- Demo flat details and credentials
+- Production setup and tenant onboarding notes
 - Feature list
 - Technology stack
 - Development cost and maintenance terms

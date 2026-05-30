@@ -61,8 +61,8 @@ docker compose up -d
 # 4. Run migrations
 docker compose exec backend npx prisma migrate deploy
 
-# 5. Seed initial data (first time only)
-docker compose exec backend npm run db:seed
+# 5. Create initial real production data
+# Provision the first Super Admin and create real flats/users.
 ```
 
 ---
@@ -109,10 +109,7 @@ A    api.caretakerapp.com     →  YOUR_VPS_IP
 A    *.caretakerapp.com       →  YOUR_VPS_IP   ← Wildcard for tenants
 ```
 
-The wildcard `*.caretakerapp.com` handles:
-- `abc.caretakerapp.com` → ABC Apartment
-- `greenview.caretakerapp.com` → Green View Apartment
-- `newflat.caretakerapp.com` → Any new tenant
+The wildcard `*.caretakerapp.com` handles every real tenant subdomain created in the admin panel.
 
 ---
 
@@ -223,7 +220,7 @@ curl https://api.caretakerapp.com/api/health
 curl https://caretakerapp.com
 
 # Check tenant resolution
-curl https://api.caretakerapp.com/api/tenant/by-slug/abc
+curl https://api.caretakerapp.com/api/tenant/by-slug/<real-flat-slug>
 ```
 
 ---

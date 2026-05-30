@@ -26,7 +26,7 @@ export default function VisitorHistoryPage() {
       </div>
 
       {isLoading ? <LoadingSpinner /> : !data?.passes?.length ? <EmptyState title="No visitor records found" /> : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="table-scroll">
           <div className="divide-y">
             {data.passes.map((pass: any) => (
               <div key={pass.id} className="p-4">

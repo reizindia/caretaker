@@ -5,6 +5,7 @@ interface Tenant {
   flatName: string;
   slug: string;
   logoUrl?: string;
+  imageUrl?: string;
   themeColor?: string;
   status: string;
   contactPerson?: string;

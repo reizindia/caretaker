@@ -20,6 +20,10 @@ export class CreateFlatDto {
 
   @IsOptional()
   @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
   themeColor?: string;
 
   @IsOptional()

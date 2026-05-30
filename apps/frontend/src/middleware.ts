@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const ADMIN_PATHS = ['/admin'];
-const PUBLIC_PATHS = ['/login', '/not-found-flat', '/inactive-flat', '/_next', '/api', '/icons', '/manifest.json', '/sw.js', '/favicon.ico'];
+const PUBLIC_PATHS = ['/login', '/database-unavailable', '/not-found-flat', '/inactive-flat', '/_next', '/api', '/icons', '/manifest.json', '/sw.js', '/favicon.ico'];
+const isProduction = process.env.NODE_ENV === 'production';
 
 function extractTenantSlug(request: NextRequest): string | null {
   const host = request.headers.get('host') || '';
-  const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN || 'caretakerapp.com';
+  const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
-  // Production: abc.caretakerapp.com → abc
-  if (host.endsWith(`.${appDomain}`)) {
+  // Production tenant subdomain.
+  if (appDomain && host.endsWith(`.${appDomain}`)) {
     const subdomain = host.replace(`.${appDomain}`, '');
     if (subdomain && subdomain !== 'www' && subdomain !== 'admin') {
       return subdomain;
@@ -17,8 +17,8 @@ function extractTenantSlug(request: NextRequest): string | null {
     return null;
   }
 
-  // Local dev: abc.localhost:3000 → abc
-  if (host.includes('.localhost')) {
+  // Local dev tenant subdomain.
+  if (!isProduction && host.includes('.localhost')) {
     const parts = host.split('.');
     if (parts.length >= 2) return parts[0];
   }
@@ -26,7 +26,7 @@ function extractTenantSlug(request: NextRequest): string | null {
   // Fallback: ?tenant=abc
   const url = new URL(request.url);
   const tenantParam = url.searchParams.get('tenant');
-  if (tenantParam) return tenantParam;
+  if (!isProduction && tenantParam) return tenantParam;
 
   return null;
 }
@@ -34,28 +34,35 @@ function extractTenantSlug(request: NextRequest): string | null {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Skip static files and public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // Always skip static assets
+  const staticPaths = ['/_next', '/api', '/icons', '/manifest.json', '/sw.js', '/favicon.ico'];
+  if (staticPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // Admin paths don't need tenant
-  if (ADMIN_PATHS.some((p) => pathname.startsWith(p))) {
+  if (PUBLIC_PATHS.includes(pathname)) {
     return NextResponse.next();
   }
 
   const slug = extractTenantSlug(request);
 
+  // No subdomain → root domain (super admin / main portal) — let everything through
   if (!slug) {
-    // No tenant context — redirect to main domain or show landing
-    if (pathname === '/') return NextResponse.next();
     return NextResponse.next();
   }
 
-  // Validate tenant with backend
+  // Subdomain detected — validate tenant with backend
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) return NextResponse.next();
     const res = await fetch(`${apiUrl}/tenant/by-slug/${slug}`, { cache: 'no-store' });
+
+    if (res.status === 503) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/database-unavailable';
+      url.searchParams.delete('tenant');
+      return NextResponse.redirect(url);
+    }
 
     if (!res.ok) {
       const url = request.nextUrl.clone();
@@ -72,15 +79,28 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
+    // Redirect flat subdomain root (/) → /login
+    if (pathname === '/') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      const response = NextResponse.redirect(url);
+      response.cookies.set('tenant-slug', slug, { path: '/', httpOnly: false, sameSite: 'lax' });
+      return response;
+    }
+
+    // Set tenant cookie on all other pages so API client picks it up
     const response = NextResponse.next();
     response.cookies.set('tenant-slug', slug, { path: '/', httpOnly: false, sameSite: 'lax' });
     response.headers.set('x-tenant-slug', slug);
     return response;
   } catch {
-    return NextResponse.next();
+    const url = request.nextUrl.clone();
+    url.pathname = '/database-unavailable';
+    url.searchParams.delete('tenant');
+    return NextResponse.redirect(url);
   }
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next|api|icons|manifest.json|sw.js|favicon.ico).*)'],
 };

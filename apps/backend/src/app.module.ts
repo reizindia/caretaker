@@ -1,7 +1,9 @@
-import { Module, MiddlewareConsumer, RequestMethod, Controller, Get } from '@nestjs/common';
+import { HttpStatus, Module, MiddlewareConsumer, RequestMethod, Controller, Get, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
+import { PrismaService } from './prisma/prisma.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { FlatModule } from './modules/flat/flat.module';
 import { UsersModule } from './modules/users/users.module';
@@ -12,12 +14,25 @@ import { GatePassModule } from './modules/gate-pass/gate-pass.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { MarketModule } from './modules/market/market.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Controller('health')
 class HealthController {
+  constructor(private prisma: PrismaService) {}
+
   @Get()
-  check() { return { status: 'ok', timestamp: new Date().toISOString() }; }
+  async check(@Res() response: Response) {
+    const databaseConnected = await this.prisma.checkConnection();
+    const statusCode = databaseConnected ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
+
+    return response.status(statusCode).json({
+      status: databaseConnected ? 'ok' : 'database_not_connected',
+      database: databaseConnected ? 'connected' : 'not_connected',
+      timestamp: new Date().toISOString(),
+    });
+  }
 }
 
 @Module({
@@ -36,6 +51,8 @@ class HealthController {
     ReportsModule,
     StorageModule,
     TenantModule,
+    MarketModule,
+    SettingsModule,
   ],
 })
 export class AppModule {

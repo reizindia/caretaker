@@ -4,10 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import apiClient from '@/lib/api/client';
 import { useCartStore } from '@/lib/store/cart.store';
-import StatusBadge from '@/components/shared/StatusBadge';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
 import toast from 'react-hot-toast';
+import { ShoppingBag, ShoppingCart, Package, Plus, Check } from 'lucide-react';
 
 export default function GroceryPage() {
   const [search, setSearch] = useState('');
@@ -28,50 +28,137 @@ export default function GroceryPage() {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Grocery</h1>
-        <Link href="/resident/cart" className="relative">
-          <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg">🛒</div>
-          {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>}
+    <div className="p-4 sm:p-5 animate-fade-in">
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-950">Grocery</h1>
+          <p className="text-xs font-medium text-slate-400">Fresh items delivered to your door</p>
+        </div>
+        <Link
+          href="/resident/cart"
+          className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+        >
+          <ShoppingCart size={18} />
+          {cartCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-950 text-[10px] font-bold text-white">
+              {cartCount}
+            </span>
+          )}
         </Link>
       </div>
 
-      <input type="text" placeholder="Search grocery items..." className="input-field mb-3" value={search} onChange={(e) => setSearch(e.target.value)} />
+      {/* Search */}
+      <div className="relative mb-3">
+        <ShoppingBag size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search grocery items..."
+          className="input-field pl-9"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
+      {/* Category Pills */}
       {categories.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          <button onClick={() => setCategory('')} className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${!category ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>All</button>
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => setCategory('')}
+            className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              !category
+                ? 'bg-slate-950 text-white shadow-sm'
+                : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-800'
+            }`}
+          >
+            All
+          </button>
           {categories.map((cat: string) => (
-            <button key={cat} onClick={() => setCategory(cat)} className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${category === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>{cat}</button>
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                category === cat
+                  ? 'bg-slate-950 text-white shadow-sm'
+                  : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-800'
+              }`}
+            >
+              {cat}
+            </button>
           ))}
         </div>
       )}
 
-      {isLoading ? <LoadingSpinner /> : !items?.length ? (
-        <EmptyState title="No grocery items available" description="Check back later for fresh items" />
+      {/* Items Grid */}
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : !items?.length ? (
+        <EmptyState
+          icon={<Package size={26} />}
+          title="No grocery items available"
+          description="Check back later for fresh items"
+        />
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {items.map((item: any) => {
             const inCart = groceryItems.find((c) => c.id === item.id);
+            const outOfStock = item.stockStatus !== 'IN_STOCK';
             return (
-              <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.name} className="w-full h-28 object-cover" />
-                ) : (
-                  <div className="w-full h-28 bg-gray-100 flex items-center justify-center text-3xl">🛒</div>
-                )}
+              <div
+                key={item.id}
+                className="card overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.09)]"
+              >
+                {/* Image */}
+                <div className="relative overflow-hidden">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="h-28 w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-28 w-full items-center justify-center bg-slate-50 text-slate-300">
+                      <ShoppingBag size={32} />
+                    </div>
+                  )}
+                  {outOfStock && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
+                      <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[10px] font-bold text-rose-600 ring-1 ring-rose-200">
+                        Out of Stock
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
                 <div className="p-3">
-                  <p className="font-medium text-sm">{item.name}</p>
-                  <p className="text-xs text-gray-500">{item.description}</p>
-                  <div className="flex justify-between items-center mt-2">
-                    <p className="font-bold text-blue-600">₹{Number(item.price).toFixed(2)}</p>
-                    {item.stockStatus === 'IN_STOCK' ? (
-                      <button onClick={() => handleAdd(item)} className={`px-3 py-1 rounded-lg text-xs font-medium ${inCart ? 'bg-green-100 text-green-700' : 'bg-blue-600 text-white'}`}>
-                        {inCart ? `In Cart (${inCart.quantity})` : 'Add'}
+                  <p className="truncate text-sm font-semibold text-slate-800">{item.name}</p>
+                  {item.description && (
+                    <p className="mt-0.5 truncate text-[11px] text-slate-400">{item.description}</p>
+                  )}
+                  <div className="mt-2.5 flex items-center justify-between">
+                    <p className="text-sm font-bold text-slate-950">₹{Number(item.price).toFixed(0)}</p>
+                    {!outOfStock && (
+                      <button
+                        onClick={() => handleAdd(item)}
+                        className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all ${
+                          inCart
+                            ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+                            : 'bg-slate-950 text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        {inCart ? (
+                          <>
+                            <Check size={11} strokeWidth={2.5} />
+                            {inCart.quantity}
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={11} strokeWidth={2.5} />
+                            Add
+                          </>
+                        )}
                       </button>
-                    ) : (
-                      <span className="text-xs text-red-500">Out of Stock</span>
                     )}
                   </div>
                 </div>

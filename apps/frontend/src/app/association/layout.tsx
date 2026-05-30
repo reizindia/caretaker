@@ -1,10 +1,9 @@
 'use client';
-import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth.store';
-import Link from 'next/link';
 import { useTenant } from '@/lib/hooks/useTenant';
-import BrandMark from '@/components/shared/BrandMark';
+import AppShell from '@/components/layout/AppShell';
 import { BarChart3, ClipboardList, Home, LogOut, Package, Users, Wrench } from 'lucide-react';
 
 const navItems = [
@@ -17,48 +16,69 @@ const navItems = [
 ];
 
 export default function AssociationLayout({ children }: { children: React.ReactNode }) {
-  const { user, token } = useAuthStore();
+  const { user, token, clearAuth } = useAuthStore();
   const router = useRouter();
-  const pathname = usePathname();
   const { tenant } = useTenant();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     if (!token) { router.push('/login'); return; }
     if (user?.role !== 'FLAT_ASSOCIATION') { router.push('/login'); }
-  }, [token, user, router]);
+  }, [token, user, router, mounted]);
 
-  if (!user || user.role !== 'FLAT_ASSOCIATION') return null;
+  if (!mounted || !user || user.role !== 'FLAT_ASSOCIATION') return null;
+
+  const flatImage = tenant?.imageUrl || user.flat?.imageUrl;
+  const flatName = tenant?.flatName || user?.flat?.name || 'CareTaker';
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/70 bg-white/90 shadow-xl shadow-slate-900/5 backdrop-blur">
-        <div className="border-b border-slate-200/80 p-5">
-          <BrandMark label={tenant?.flatName || user?.flat?.name || 'CareTaker'} subtitle="Association office" />
+    <AppShell
+      navItems={navItems}
+      activeStyle="bg-slate-950 text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+      inactiveStyle="text-slate-500 hover:bg-slate-100 hover:text-slate-950"
+      sidebarBg="bg-white border-r border-slate-100"
+      header={
+        <div className="flex min-w-0 items-center gap-2.5">
+          {flatImage ? (
+            <img src={flatImage} alt={flatName} className="h-9 w-9 shrink-0 rounded-xl object-cover ring-1 ring-slate-200" />
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-xs font-bold text-white">
+              {flatName[0]}
+            </div>
+          )}
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold leading-tight text-slate-950">{flatName}</div>
+            <div className="truncate text-[11px] font-medium leading-tight text-slate-400">Association portal</div>
+          </div>
         </div>
-        <nav className="flex-1 space-y-1 p-3">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <Link key={item.href} href={item.href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'}`}>
-                <Icon size={18} strokeWidth={2.2} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="border-t border-slate-200/80 p-4">
-          <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-          <p className="text-xs text-slate-500">{user.email}</p>
-          <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="mt-3 flex items-center gap-2 text-sm font-semibold text-rose-600">
-            <LogOut size={16} />
+      }
+      footer={
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5 border border-slate-100">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-xs font-bold text-slate-700">
+              {(user.name || 'A')[0].toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold text-slate-900">{user.name}</div>
+              <div className="truncate text-xs text-slate-400">{user.email}</div>
+            </div>
+          </div>
+          <button
+            onClick={() => { clearAuth(); router.push('/login'); }}
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-rose-500 transition-all duration-150 hover:bg-rose-50 hover:text-rose-600"
+          >
+            <LogOut size={15} />
             Sign Out
           </button>
         </div>
-      </aside>
-      <main className="ml-64 flex-1 p-6 lg:p-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
-      </main>
-    </div>
+      }
+    >
+      {children}
+    </AppShell>
   );
 }

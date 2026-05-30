@@ -9,12 +9,14 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, description, action }: PageHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h1 className="text-3xl font-bold tracking-normal text-slate-950">{title}</h1>
-        {description && <p className="mt-1 text-sm font-medium text-slate-500">{description}</p>}
+        <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">{title}</h1>
+        {description && (
+          <p className="mt-1 text-sm text-slate-400 font-medium leading-relaxed">{description}</p>
+        )}
       </div>
-      {action && <div>{action}</div>}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }

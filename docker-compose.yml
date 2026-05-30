@@ -29,8 +29,10 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://caretaker_user:${POSTGRES_PASSWORD:-caretaker_secret}@postgres:5432/caretaker_db
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      DATABASE_URL: postgresql://caretaker_user:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/caretaker_db
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+      APP_DOMAIN: ${NEXT_PUBLIC_APP_DOMAIN:?NEXT_PUBLIC_APP_DOMAIN is required}
       JWT_EXPIRY: ${JWT_EXPIRY:-7d}
       PORT: 3001
       NODE_ENV: ${NODE_ENV:-production}
@@ -53,8 +55,8 @@ services:
       context: ./apps/frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
-        NEXT_PUBLIC_APP_DOMAIN: ${NEXT_PUBLIC_APP_DOMAIN:-caretakerapp.com}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is required}
+        NEXT_PUBLIC_APP_DOMAIN: ${NEXT_PUBLIC_APP_DOMAIN:?NEXT_PUBLIC_APP_DOMAIN is required}
         NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Caretaker}
     container_name: caretaker_frontend
     restart: unless-stopped

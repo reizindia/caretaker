@@ -8,7 +8,7 @@ export class TenantService {
   async resolveByHostname(hostname: string) {
     if (!hostname) throw new NotFoundException('Hostname required');
 
-    // Extract subdomain: abc.caretakerapp.com → abc
+    // Extract the tenant slug from a subdomain host.
     const parts = hostname.split('.');
     let slug: string;
 
@@ -34,6 +34,7 @@ export class TenantService {
       flatName: flat.name,
       slug: flat.slug,
       logoUrl: flat.logoUrl,
+      imageUrl: flat.imageUrl,
       themeColor: flat.themeColor,
       status: flat.status,
       contactPerson: flat.contactPerson,

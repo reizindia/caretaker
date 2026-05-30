@@ -48,12 +48,17 @@ export default function AdminSidebar() {
   const { logout, user } = useAuth();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200/70 bg-slate-950 text-white shadow-2xl shadow-slate-950/15">
-      <div className="border-b border-white/10 p-5">
-        <BrandMark tone="dark" subtitle="Super admin suite" />
+    <aside
+      className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-slate-950 text-white"
+      style={{ boxShadow: '4px 0 24px rgba(0,0,0,0.2)' }}
+    >
+      {/* Brand */}
+      <div className="border-b border-white/8 px-5 py-4">
+        <BrandMark tone="dark" subtitle="Admin suite" />
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+      {/* Nav items */}
+      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           const Icon = item.icon;
@@ -61,24 +66,44 @@ export default function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                isActive ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-300 hover:bg-white/10 hover:text-white'
+              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                isActive
+                  ? 'bg-white text-slate-950 shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+                  : 'text-slate-400 hover:bg-white/8 hover:text-white'
               }`}
             >
-              <Icon size={18} strokeWidth={2.2} />
+              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150 ${
+                isActive
+                  ? 'bg-slate-100 text-slate-800'
+                  : 'bg-white/6 text-slate-500 group-hover:bg-white/12 group-hover:text-white'
+              }`}>
+                <Icon size={15} strokeWidth={2.2} />
+              </div>
               <span>{item.label}</span>
+              {isActive && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-slate-400" />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
-        <div className="mb-3 rounded-2xl bg-white/10 p-3">
-          <div className="text-sm font-semibold">{user?.name || 'Demo Admin'}</div>
-          <div className="text-xs text-slate-400">{user?.email || 'admin@caretaker.com'}</div>
+      {/* User + Logout */}
+      <div className="border-t border-white/8 p-4 space-y-2">
+        <div className="flex items-center gap-3 rounded-xl bg-white/6 px-3 py-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/12 text-xs font-bold text-white">
+            {(user?.name || 'A')[0].toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-white">{user?.name || 'Admin'}</div>
+            <div className="truncate text-xs text-slate-500">{user?.email || ''}</div>
+          </div>
         </div>
-        <button onClick={logout} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/10 hover:text-rose-100">
-          <LogOut size={17} />
+        <button
+          onClick={logout}
+          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-slate-400 transition-all duration-150 hover:bg-rose-500/10 hover:text-rose-300"
+        >
+          <LogOut size={15} />
           Sign Out
         </button>
       </div>

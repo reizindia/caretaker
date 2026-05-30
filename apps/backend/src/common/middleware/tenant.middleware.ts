@@ -27,7 +27,10 @@ export class TenantMiddleware implements NestMiddleware {
       (req as any).tenantFlatId = flat.id;
       (req as any).tenantFlat = flat;
     } catch {
-      // If tenant lookup fails, continue without tenant (admin routes will handle auth)
+      return res.status(503).json({
+        message: 'Database not connected. Please check the live database connection.',
+        code: 'DATABASE_NOT_CONNECTED',
+      });
     }
 
     next();

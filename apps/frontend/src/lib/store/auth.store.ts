@@ -16,6 +16,7 @@ interface User {
     slug: string;
     themeColor?: string;
     logoUrl?: string;
+    imageUrl?: string;
   };
 }
 
@@ -34,17 +35,9 @@ export const useAuthStore = create<AuthStore>()(
       token: null,
       setAuth: (user, token) => {
         set({ user, token });
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('caretaker_token', token);
-          localStorage.setItem('caretaker_user', JSON.stringify(user));
-        }
       },
       clearAuth: () => {
         set({ user: null, token: null });
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('caretaker_token');
-          localStorage.removeItem('caretaker_user');
-        }
       },
       isAuthenticated: () => !!get().token && !!get().user,
     }),

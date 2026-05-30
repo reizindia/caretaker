@@ -5,16 +5,17 @@ import apiClient from '@/lib/api/client';
 import PageHeader from '@/components/shared/PageHeader';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
+import ImageUploadField from '@/components/shared/ImageUploadField';
 import toast from 'react-hot-toast';
+import { useAdminFlatStore } from '@/lib/store/admin-flat.store';
 
-function ServiceForm({ service, flatSlug, onClose, onSave }: any) {
+function ServiceForm({ service, onClose, onSave }: any) {
   const [form, setForm] = useState({ name: service?.name || '', description: service?.description || '', basePrice: service?.basePrice || '', imageUrl: service?.imageUrl || '', isActive: service?.isActive ?? true });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const headers = { 'X-Tenant-Slug': flatSlug };
     try {
-      if (service) { await apiClient.patch(`/services/${service.id}`, form, { headers }); toast.success('Updated'); }
-      else { await apiClient.post('/services', form, { headers }); toast.success('Created'); }
+      if (service) { await apiClient.patch(`/services/${service.id}`, form); toast.success('Updated'); }
+      else { await apiClient.post('/services', form); toast.success('Created'); }
       onSave(); onClose();
     } catch (err: any) { toast.error(err?.response?.data?.message || 'Error'); }
   };
@@ -26,7 +27,7 @@ function ServiceForm({ service, flatSlug, onClose, onSave }: any) {
           <div><label className="block text-sm font-medium mb-1">Name *</label><input className="input-field" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div><label className="block text-sm font-medium mb-1">Description</label><textarea className="input-field" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           <div><label className="block text-sm font-medium mb-1">Base Price (₹)</label><input className="input-field" type="number" value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium mb-1">Image URL</label><input className="input-field" type="url" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} /></div>
+          <ImageUploadField label="Service Image" value={form.imageUrl} folder="services" onChange={(imageUrl) => setForm({ ...form, imageUrl })} />
           <div className="flex gap-3 pt-2"><button type="submit" className="btn-primary flex-1">Save</button><button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button></div>
         </form>
       </div>
@@ -35,24 +36,22 @@ function ServiceForm({ service, flatSlug, onClose, onSave }: any) {
 }
 
 export default function AdminServicesPage() {
-  const [flatSlug, setFlatSlug] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editService, setEditService] = useState<any>(null);
+  const { selectedFlat } = useAdminFlatStore();
   const queryClient = useQueryClient();
 
-  const { data: flatsData } = useQuery({ queryKey: ['flats-select'], queryFn: () => apiClient.get('/flats').then((r) => r.data) });
   const { data: services, isLoading } = useQuery({
-    queryKey: ['services-admin', flatSlug],
-    queryFn: () => apiClient.get('/services', { headers: { 'X-Tenant-Slug': flatSlug } }).then((r) => r.data),
-    enabled: !!flatSlug,
+    queryKey: ['services-admin', selectedFlat?.slug],
+    queryFn: () => apiClient.get('/services').then((r) => r.data),
+    enabled: !!selectedFlat?.slug,
   });
 
   return (
     <div>
-      <PageHeader title="Services" action={flatSlug ? <button className="btn-primary" onClick={() => { setEditService(null); setShowForm(true); }}>+ Add Service</button> : undefined} />
-      {showForm && <ServiceForm service={editService} flatSlug={flatSlug} onClose={() => { setShowForm(false); setEditService(null); }} onSave={() => queryClient.invalidateQueries({ queryKey: ['services-admin'] })} />}
-      <div className="mb-4"><select className="input-field w-auto" value={flatSlug} onChange={(e) => setFlatSlug(e.target.value)}><option value="">Select a flat</option>{flatsData?.flats?.map((f: any) => <option key={f.id} value={f.slug}>{f.name}</option>)}</select></div>
-      {!flatSlug ? <EmptyState title="Select a flat" /> : isLoading ? <LoadingSpinner /> : !services?.length ? <EmptyState title="No services" /> : (
+      <PageHeader title="Services" description={selectedFlat ? `Managing ${selectedFlat.name}` : 'Select an active flat from the sidebar'} action={selectedFlat ? <button className="btn-primary" onClick={() => { setEditService(null); setShowForm(true); }}>+ Add Service</button> : undefined} />
+      {showForm && <ServiceForm service={editService} onClose={() => { setShowForm(false); setEditService(null); }} onSave={() => queryClient.invalidateQueries({ queryKey: ['services-admin', selectedFlat?.slug] })} />}
+      {!selectedFlat ? <EmptyState title="Select a flat from the sidebar" /> : isLoading ? <LoadingSpinner /> : !services?.length ? <EmptyState title="No services" /> : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {services.map((svc: any) => (
             <div key={svc.id} className="card">

@@ -10,20 +10,9 @@ import toast from 'react-hot-toast';
 
 export default function AssociationOrdersPage() {
   const [tab, setTab] = useState<'grocery' | 'food'>('grocery');
-  const queryClient = useQueryClient();
 
   const { data: groceryOrders, isLoading: g } = useQuery({ queryKey: ['assoc-grocery-orders'], queryFn: () => apiClient.get('/grocery/orders').then((r) => r.data) });
   const { data: foodOrders, isLoading: f } = useQuery({ queryKey: ['assoc-food-orders'], queryFn: () => apiClient.get('/food/orders').then((r) => r.data) });
-
-  const updateGrocery = async (id: string, status: string) => {
-    try { await apiClient.patch(`/grocery/orders/${id}/status`, { status }); queryClient.invalidateQueries({ queryKey: ['assoc-grocery-orders'] }); toast.success('Updated'); }
-    catch { toast.error('Failed'); }
-  };
-
-  const updateFood = async (id: string, status: string) => {
-    try { await apiClient.patch(`/food/orders/${id}/status`, { status }); queryClient.invalidateQueries({ queryKey: ['assoc-food-orders'] }); toast.success('Updated'); }
-    catch { toast.error('Failed'); }
-  };
 
   return (
     <div>
@@ -45,10 +34,7 @@ export default function AssociationOrdersPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-blue-600">₹{Number(order.totalAmount).toFixed(2)}</p>
-                  <StatusBadge status={order.status} />
-                  <select className="input-field text-xs mt-2" value={order.status} onChange={(e) => updateGrocery(order.id, e.target.value)}>
-                    <option value="PENDING">Pending</option><option value="CONFIRMED">Confirmed</option><option value="PROCESSING">Processing</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option>
-                  </select>
+                  <div className="mt-2 text-right"><StatusBadge status={order.status} /></div>
                 </div>
               </div>
             </div>
@@ -69,10 +55,7 @@ export default function AssociationOrdersPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-blue-600">₹{Number(order.totalAmount).toFixed(2)}</p>
-                  <StatusBadge status={order.status} />
-                  <select className="input-field text-xs mt-2" value={order.status} onChange={(e) => updateFood(order.id, e.target.value)}>
-                    <option value="PENDING">Pending</option><option value="CONFIRMED">Confirmed</option><option value="PROCESSING">Processing</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option>
-                  </select>
+                  <div className="mt-2 text-right"><StatusBadge status={order.status} /></div>
                 </div>
               </div>
             </div>

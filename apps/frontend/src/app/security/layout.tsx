@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth.store';
 import MobileNav from '@/components/layout/MobileNav';
@@ -13,32 +13,52 @@ const navItems = [
 ];
 
 export default function SecurityLayout({ children }: { children: React.ReactNode }) {
-  const { user, token } = useAuthStore();
+  const { user, token, clearAuth } = useAuthStore();
   const router = useRouter();
   const { tenant } = useTenant();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     if (!token) { router.push('/login'); return; }
     if (user?.role !== 'SECURITY') { router.push('/login'); }
-  }, [token, user, router]);
+  }, [token, user, router, mounted]);
 
-  if (!user || user.role !== 'SECURITY') return null;
+  if (!mounted || !user || user.role !== 'SECURITY') return null;
+
+  const flatImage = tenant?.imageUrl || user.flat?.imageUrl;
+  const flatName = tenant?.flatName || user?.flat?.name || 'CareTaker';
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950 px-4 py-3 text-white shadow-xl shadow-slate-950/10">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400 text-slate-950">
-              <ShieldCheck size={19} />
-            </div>
-            <div>
-              <p className="text-sm font-bold">{tenant?.flatName || user?.flat?.name}</p>
-              <p className="text-xs text-slate-400">Security / {user.name}</p>
+      {/* Security Header */}
+      <header
+        className="sticky top-0 z-30 border-b border-white/8 bg-slate-950 px-4 py-0 text-white"
+        style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}
+      >
+        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            {flatImage ? (
+              <img src={flatImage} alt={flatName} className="h-9 w-9 flex-shrink-0 rounded-xl object-cover ring-1 ring-white/10" />
+            ) : (
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-400/15 text-cyan-400">
+                <ShieldCheck size={17} strokeWidth={2.2} />
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold leading-tight">{flatName}</p>
+              <p className="text-[11px] font-medium leading-tight text-slate-500">Security · {user.name}</p>
             </div>
           </div>
-          <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-slate-300 hover:bg-white/10 hover:text-white">
-            <LogOut size={14} />
+          <button
+            onClick={() => { clearAuth(); router.push('/login'); }}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-400 transition hover:bg-white/8 hover:text-white"
+          >
+            <LogOut size={13} />
             Logout
           </button>
         </div>

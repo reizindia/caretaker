@@ -51,6 +51,13 @@ enum BookingStatus {
   COMPLETED
 }
 
+enum MarketListingStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  INACTIVE
+}
+
 // ─── Flat (Tenant) ────────────────────────────────────────────────────────────
 
 model Flat {
@@ -60,6 +67,7 @@ model Flat {
   subdomain      String?    @unique
   address        String?
   logoUrl        String?
+  imageUrl       String?
   themeColor     String?    @default("#3B82F6")
   contactPerson  String?
   contactPhone   String?
@@ -77,6 +85,8 @@ model Flat {
   timeSlots       TimeSlot[]
   serviceBookings ServiceBooking[]
   gatePasses      GatePass[]
+  marketListings  MarketListing[]
+  marketMessages  MarketMessage[]
 
   @@map("flats")
 }
@@ -103,6 +113,8 @@ model User {
   serviceBookings    ServiceBooking[]
   gatePassRequests   GatePass[]     @relation("ResidentGatePasses")
   approvedGatePasses GatePass[]     @relation("ApprovedBy")
+  marketListings     MarketListing[] @relation("MarketSeller")
+  marketMessages     MarketMessage[]
 
   @@map("users")
 }
@@ -331,4 +343,50 @@ model GatePass {
   updatedAt          DateTime       @updatedAt
 
   @@map("gate_passes")
+}
+
+// Free Market
+
+model MarketListing {
+  id          String              @id @default(cuid())
+  flatId      String
+  flat        Flat                @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  sellerId    String
+  seller      User                @relation("MarketSeller", fields: [sellerId], references: [id])
+  title       String
+  description String?
+  price       Decimal             @db.Decimal(10, 2)
+  imageUrl    String?
+  category    String?
+  condition   String?
+  status      MarketListingStatus @default(AVAILABLE)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  messages MarketMessage[]
+
+  @@map("market_listings")
+}
+
+model MarketMessage {
+  id        String        @id @default(cuid())
+  flatId    String
+  flat      Flat          @relation(fields: [flatId], references: [id], onDelete: Cascade)
+  listingId String
+  listing   MarketListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User          @relation(fields: [senderId], references: [id])
+  message   String
+  createdAt DateTime      @default(now())
+
+  @@map("market_messages")
+}
+
+model PlatformSetting {
+  key       String   @id
+  value     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_settings")
 }
