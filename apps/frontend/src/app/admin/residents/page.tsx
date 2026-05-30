@@ -7,6 +7,7 @@ import StatusBadge from '@/components/shared/StatusBadge';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
 import toast from 'react-hot-toast';
+import { Building2, Layers3 } from 'lucide-react';
 
 function UserForm({ user, flatId, role, onClose, onSave }: any) {
   const { data: flatsData } = useQuery({
@@ -78,6 +79,8 @@ export default function ResidentsPage() {
   const queryClient = useQueryClient();
 
   const { data: flatsData } = useQuery({ queryKey: ['flats-select'], queryFn: () => apiClient.get('/flats').then((r) => r.data) });
+  const flats = flatsData?.flats || [];
+  const selectedFlat = flats.find((flat: any) => flat.id === flatFilter);
   const { data, isLoading } = useQuery({
     queryKey: ['residents', flatFilter],
     queryFn: () => apiClient.get(`/users?role=RESIDENT${flatFilter ? '&flatId=' + flatFilter : ''}`).then((r) => r.data),
@@ -98,11 +101,55 @@ export default function ResidentsPage() {
       <PageHeader title="Residents" description="Manage all residents across flats" action={<button className="btn-primary" onClick={() => { setEditUser(null); setShowForm(true); }}>+ Add Resident</button>} />
       {showForm && <UserForm user={editUser} role="RESIDENT" onClose={() => { setShowForm(false); setEditUser(null); }} onSave={() => queryClient.invalidateQueries({ queryKey: ['residents'] })} />}
 
-      <div className="mb-4">
-        <select className="input-field w-auto" value={flatFilter} onChange={(e) => setFlatFilter(e.target.value)}>
-          <option value="">All Flats</option>
-          {flatsData?.flats?.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
-        </select>
+      <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+              <Layers3 size={17} />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Filter residents</p>
+              <p className="text-sm font-semibold text-slate-950">{selectedFlat?.name || 'All flats'}</p>
+            </div>
+          </div>
+          {flatFilter && (
+            <button
+              type="button"
+              onClick={() => setFlatFilter('')}
+              className="rounded-lg px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => setFlatFilter('')}
+            className={`flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition ${
+              !flatFilter
+                ? 'border-slate-950 bg-slate-950 text-white shadow-sm'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Building2 size={15} />
+            All Flats
+          </button>
+          {flats.map((flat: any) => (
+            <button
+              key={flat.id}
+              type="button"
+              onClick={() => setFlatFilter(flat.id)}
+              className={`shrink-0 rounded-xl border px-4 py-2 text-sm font-bold transition ${
+                flatFilter === flat.id
+                  ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              {flat.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {!data?.users?.length ? <EmptyState title="No residents found" /> : (

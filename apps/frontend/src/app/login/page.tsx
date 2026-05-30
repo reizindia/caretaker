@@ -10,9 +10,11 @@ import {
   Database,
   LockKeyhole,
   Mail,
+  Phone,
   RefreshCcw,
   ShieldCheck,
   Sparkles,
+  UserPlus,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BrandMark from '@/components/shared/BrandMark';
@@ -44,11 +46,20 @@ function getTenantSlug(): string | null {
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
+  const [registerForm, setRegisterForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    flatNumber: '',
+    password: '',
+  });
   const [loading, setLoading] = useState(false);
   const [tenant, setTenant] = useState<any>(null);
   const [tenantLoading, setTenantLoading] = useState(true);
   const [databaseError, setDatabaseError] = useState('');
-  const { login, redirectByRole } = useAuth();
+  const { login, register, redirectByRole } = useAuth();
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -59,6 +70,7 @@ export default function LoginPage() {
     }
 
     const slug = getTenantSlug();
+    setTenantSlug(slug);
 
     fetch(`${apiUrl}/health`, { cache: 'no-store' })
       .then(async (r) => {
@@ -93,18 +105,34 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const user = await login(email, password);
-
-      if (isTenantLogin && user.role !== 'SUPER_ADMIN' && user.flatId !== tenant.flatId) {
-        toast.error('This account does not belong to this apartment.');
-        setLoading(false);
-        return;
-      }
+      const user = await login(email, password, isTenantLogin ? tenant.slug : tenantSlug);
 
       toast.success(`Welcome back, ${user.name}!`);
       redirectByRole(user);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenant?.slug) {
+      toast.error('Registration is available only from your apartment URL.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const user = await register({
+        ...registerForm,
+        tenantSlug: tenant.slug,
+      });
+      toast.success(`Welcome, ${user.name}!`);
+      redirectByRole(user);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -241,57 +269,126 @@ export default function LoginPage() {
                   <ShieldCheck size={22} />
                 </div>
                 <p className="text-sm font-bold uppercase tracking-[0.18em]" style={{ color: isTenantLogin ? themeColor : '#0f766e' }}>
-                  Secure sign in
+                  {mode === 'register' ? 'Resident registration' : 'Secure sign in'}
                 </p>
                 <h2 className="mt-2 text-3xl font-bold tracking-normal text-slate-950">
-                  {isTenantLogin ? `Enter ${tenant.flatName}` : 'Enter CareTaker'}
+                  {mode === 'register' ? `Join ${tenant.flatName}` : isTenantLogin ? `Enter ${tenant.flatName}` : 'Enter CareTaker'}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  {isTenantLogin
+                  {mode === 'register'
+                    ? 'Create your resident account for this apartment. Your flat number is required.'
+                    : isTenantLogin
                     ? 'Use your resident, security, or association account for this apartment.'
                     : 'Sign in with your platform administrator account.'}
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email or phone</label>
-                  <div className="relative">
-                    <Mail size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="input-field h-12 pl-10"
-                      placeholder="name@example.com"
-                      required
-                    />
-                  </div>
+              {isTenantLogin && (
+                <div className="mb-5 grid grid-cols-2 rounded-xl border border-slate-100 bg-slate-50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    className={`rounded-lg py-2 text-sm font-bold transition ${mode === 'login' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400'}`}
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode('register')}
+                    className={`rounded-lg py-2 text-sm font-bold transition ${mode === 'register' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-400'}`}
+                  >
+                    Register
+                  </button>
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
-                  <div className="relative">
-                    <LockKeyhole size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="input-field h-12 pl-10"
-                      placeholder="Enter your password"
-                      required
-                    />
+              )}
+
+              {mode === 'login' ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email or phone</label>
+                    <div className="relative">
+                      <Mail size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="input-field h-12 pl-10"
+                        placeholder="name@example.com"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full py-3 text-base"
-                  style={isTenantLogin ? { backgroundColor: themeColor, borderColor: themeColor } : {}}
-                >
-                  {loading ? 'Signing in...' : 'Sign in'}
-                  {!loading && <ArrowRight size={18} />}
-                </button>
-              </form>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
+                    <div className="relative">
+                      <LockKeyhole size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="input-field h-12 pl-10"
+                        placeholder="Enter your password"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn-primary w-full py-3 text-base"
+                    style={isTenantLogin ? { backgroundColor: themeColor, borderColor: themeColor } : {}}
+                  >
+                    {loading ? 'Signing in...' : 'Sign in'}
+                    {!loading && <ArrowRight size={18} />}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Full name</label>
+                    <div className="relative">
+                      <UserPlus size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input className="input-field h-12 pl-10" value={registerForm.name} onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })} placeholder="Your name" required />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Email</label>
+                    <div className="relative">
+                      <Mail size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input type="email" className="input-field h-12 pl-10" value={registerForm.email} onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })} placeholder="name@example.com" required />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-semibold text-slate-700">Phone</label>
+                      <div className="relative">
+                        <Phone size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input className="input-field h-12 pl-10" value={registerForm.phone} onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })} placeholder="Optional" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-semibold text-slate-700">Flat number *</label>
+                      <input className="input-field h-12" value={registerForm.flatNumber} onChange={(e) => setRegisterForm({ ...registerForm, flatNumber: e.target.value })} placeholder="A-101" required />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
+                    <div className="relative">
+                      <LockKeyhole size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input type="password" minLength={6} className="input-field h-12 pl-10" value={registerForm.password} onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })} placeholder="Create password" required />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn-primary w-full py-3 text-base"
+                    style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                  >
+                    {loading ? 'Creating account...' : 'Create resident account'}
+                    {!loading && <ArrowRight size={18} />}
+                  </button>
+                </form>
+              )}
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-500">
                 {isTenantLogin ? (

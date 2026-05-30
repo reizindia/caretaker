@@ -7,8 +7,22 @@ export function useAuth() {
   const { user, token, setAuth, clearAuth } = useAuthStore();
   const router = useRouter();
 
-  const login = async (email: string, password: string) => {
-    const res = await apiClient.post('/auth/login', { email, password });
+  const login = async (email: string, password: string, tenantSlug?: string | null) => {
+    const res = await apiClient.post('/auth/login', { email, password, tenantSlug: tenantSlug || undefined });
+    const { access_token, user: userData } = res.data;
+    setAuth(userData, access_token);
+    return userData;
+  };
+
+  const register = async (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    flatNumber: string;
+    password: string;
+    tenantSlug: string;
+  }) => {
+    const res = await apiClient.post('/auth/register', data);
     const { access_token, user: userData } = res.data;
     setAuth(userData, access_token);
     return userData;
@@ -29,5 +43,5 @@ export function useAuth() {
     }
   };
 
-  return { user, token, login, logout, redirectByRole, isAuthenticated: !!token };
+  return { user, token, login, register, logout, redirectByRole, isAuthenticated: !!token };
 }

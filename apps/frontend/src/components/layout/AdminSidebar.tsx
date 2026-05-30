@@ -9,7 +9,6 @@ import {
   Building2,
   CalendarClock,
   ClipboardList,
-  FileText,
   Home,
   LogOut,
   Package,
@@ -39,7 +38,6 @@ const navItems = [
   { label: 'Service Bookings', href: '/admin/service-bookings', icon: BellDot },
   { label: 'Gate Passes', href: '/admin/gate-passes', icon: Home },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
-  { label: 'Documentation', href: '/admin/documentation', icon: FileText },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 

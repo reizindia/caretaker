@@ -11,7 +11,7 @@ import apiClient from '@/lib/api/client';
 import { useQuery } from '@tanstack/react-query';
 import {
   BarChart3, BellDot, Building2, CalendarClock, ClipboardList,
-  FileText, Home, LogOut, Package, Settings, ShieldCheck,
+  Home, LogOut, Package, Settings, ShieldCheck,
   ShoppingCart, Soup, UserCog, Users, Utensils, Wrench,
 } from 'lucide-react';
 
@@ -31,7 +31,6 @@ const navItems = [
   { label: 'Service Bookings', href: '/admin/service-bookings', icon: BellDot },
   { label: 'Gate Passes', href: '/admin/gate-passes', icon: Home },
   { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
-  { label: 'Documentation', href: '/admin/documentation', icon: FileText },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
@@ -81,24 +80,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       header={
         <div className="flex min-w-0 flex-col gap-3">
           <BrandMark tone="dark" subtitle="Admin suite" />
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Active flat</span>
-            <select
-              className="h-9 w-full rounded-lg border border-white/10 bg-white/10 px-2 text-xs font-semibold text-white outline-none transition focus:border-cyan-300"
-              value={selectedFlat?.id || ''}
-              onChange={(event) => {
-                const flat = flats.find((item: any) => item.id === event.target.value);
-                setSelectedFlat(flat ? { id: flat.id, name: flat.name, slug: flat.slug } : null);
-              }}
-            >
-              {!flats.length && <option value="">No flats</option>}
-              {flats.map((flat: any) => (
-                <option key={flat.id} value={flat.id} className="text-slate-950">
-                  {flat.name}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
       }
       footer={
