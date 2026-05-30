@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/database-unavailable', '/not-found-flat', '/inactive-flat', '/_next', '/api', '/icons', '/manifest.json', '/sw.js', '/favicon.ico'];
+const PUBLIC_PATHS = ['/login', '/database-unavailable', '/not-found-flat', '/inactive-flat', '/_next', '/api', '/icons', '/manifest.json', '/site.webmanifest', '/sw.js', '/favicon.ico'];
 const isProduction = process.env.NODE_ENV === 'production';
 
 function extractTenantSlug(request: NextRequest): string | null {
@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Always skip static assets
-  const staticPaths = ['/_next', '/api', '/icons', '/manifest.json', '/sw.js', '/favicon.ico'];
+  const staticPaths = ['/_next', '/api', '/icons', '/manifest.json', '/site.webmanifest', '/sw.js', '/favicon.ico'];
   if (staticPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
@@ -102,5 +102,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next|api|icons|manifest.json|sw.js|favicon.ico).*)'],
+  matcher: ['/((?!_next|api|icons|manifest.json|site.webmanifest|sw.js|favicon.ico).*)'],
 };
