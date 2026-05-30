@@ -16,6 +16,7 @@ async function bootstrap() {
   requiredEnv('DATABASE_URL');
   requiredEnv('JWT_SECRET');
   requiredEnv('CORS_ORIGIN');
+  requiredEnv('APP_DOMAIN');
 
   const app = await NestFactory.create(AppModule);
 
@@ -37,7 +38,17 @@ async function bootstrap() {
         /\.localhost(:\d+)?$/.test(origin)
       );
 
-      if (!origin || allowedOrigins.includes(origin) || isLocalhost) {
+      const appDomain = process.env.APP_DOMAIN?.trim();
+      const isAppDomain = Boolean(origin && appDomain && (() => {
+        try {
+          const hostname = new URL(origin).hostname;
+          return hostname === appDomain || hostname.endsWith(`.${appDomain}`);
+        } catch {
+          return false;
+        }
+      })());
+
+      if (!origin || allowedOrigins.includes(origin) || isLocalhost || isAppDomain) {
         callback(null, true);
       } else {
         callback(new Error(`CORS blocked origin: ${origin}`), false);
