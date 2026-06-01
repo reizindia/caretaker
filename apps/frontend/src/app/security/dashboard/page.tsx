@@ -31,37 +31,52 @@ export default function SecurityDashboard() {
 
       <div className="mb-6 grid grid-cols-3 gap-3">
         {stats.map((stat) => (
-          <div key={stat.label} className="metric-card text-center">
-            <p className={`mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-            <p className="text-xs font-semibold text-slate-500">{stat.label}</p>
+          <div key={stat.label} className="metric-card text-center flex flex-col items-center justify-center">
+            <p className={`mb-2 flex h-12 w-12 items-center justify-center rounded-2xl text-2xl font-bold transition-transform duration-300 hover:scale-110 ${stat.color}`}>{stat.value}</p>
+            <p className="text-xs font-bold tracking-wide uppercase text-slate-400">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Link href="/security/gate-passes" className="card group flex items-center justify-between active:scale-95">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Link
+          href="/security/gate-passes"
+          className="card-padded group flex items-center justify-between transition-all duration-300 hover:border-slate-200/80 hover:shadow-lg active:scale-[0.98] border border-transparent"
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white transition-transform duration-300 group-hover:scale-110 shadow-sm">
               <KeyRound size={22} />
             </div>
             <div>
-              <p className="font-bold text-slate-950">Manage Gate Passes</p>
-              {(pending?.passes?.length || 0) > 0 && <p className="mt-1 text-xs font-semibold text-rose-600">{pending.passes.length} pending approvals</p>}
+              <p className="font-bold text-slate-950 transition-colors group-hover:text-black">Manage Gate Passes</p>
+              {(pending?.passes?.length || 0) > 0 ? (
+                <p className="mt-1 text-xs font-semibold text-rose-600 animate-pulse">{pending.passes.length} pending approvals</p>
+              ) : (
+                <p className="mt-1 text-xs font-semibold text-slate-400">View and issue passes</p>
+              )}
             </div>
           </div>
-          <ArrowRight size={18} className="text-slate-400 transition group-hover:translate-x-0.5" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 transition-all duration-300 group-hover:bg-slate-950 group-hover:text-white">
+            <ArrowRight size={16} className="text-slate-400 transition-transform duration-300 group-hover:translate-x-0.5" />
+          </div>
         </Link>
-        <Link href="/security/visitor-history" className="card group flex items-center justify-between active:scale-95">
+
+        <Link
+          href="/security/visitor-history"
+          className="card-padded group flex items-center justify-between transition-all duration-300 hover:border-slate-200/80 hover:shadow-lg active:scale-[0.98] border border-transparent"
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 transition-transform duration-300 group-hover:scale-110 shadow-sm">
               <ClipboardList size={22} />
             </div>
             <div>
-              <p className="font-bold text-slate-950">Visitor History</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">Review entries and exits</p>
+              <p className="font-bold text-slate-950 transition-colors group-hover:text-black">Visitor History</p>
+              <p className="mt-1 text-xs font-semibold text-slate-400">Review entries and exits</p>
             </div>
           </div>
-          <ArrowRight size={18} className="text-slate-400 transition group-hover:translate-x-0.5" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-50 transition-all duration-300 group-hover:bg-slate-950 group-hover:text-white">
+            <ArrowRight size={16} className="text-slate-400 transition-transform duration-300 group-hover:translate-x-0.5" />
+          </div>
         </Link>
       </div>
     </div>
