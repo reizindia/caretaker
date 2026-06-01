@@ -13,7 +13,7 @@ export class GatePassController {
   constructor(private gatePassService: GatePassService) {}
 
   @Post()
-  @Roles(Role.RESIDENT)
+  @Roles(Role.RESIDENT, Role.SECURITY, Role.SUPER_ADMIN)
   create(@CurrentUser() user: any, @Req() req: any, @Body() dto: any) {
     return this.gatePassService.create(user, req.tenantFlatId, dto);
   }
@@ -38,13 +38,13 @@ export class GatePassController {
   }
 
   @Patch(':id/approve')
-  @Roles(Role.SECURITY, Role.SUPER_ADMIN)
+  @Roles(Role.RESIDENT, Role.SECURITY, Role.SUPER_ADMIN)
   approve(@Param('id') id: string, @CurrentUser() user: any) {
     return this.gatePassService.approve(id, user);
   }
 
   @Patch(':id/reject')
-  @Roles(Role.SECURITY, Role.SUPER_ADMIN)
+  @Roles(Role.RESIDENT, Role.SECURITY, Role.SUPER_ADMIN)
   reject(@Param('id') id: string, @CurrentUser() user: any, @Body('notes') notes?: string) {
     return this.gatePassService.reject(id, user, notes);
   }

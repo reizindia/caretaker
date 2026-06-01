@@ -12,6 +12,21 @@ export default function SecurityGatePassesPage() {
   const [search, setSearch] = useState('');
   const queryClient = useQueryClient();
 
+  // Form states for initiating gate pass
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    residentId: '',
+    visitorName: '',
+    visitorPhone: '',
+    purpose: '',
+  });
+
+  // Autocomplete resident states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [residents, setResidents] = useState<any[]>([]);
+  const [searchingResidents, setSearchingResidents] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ['security-gate-passes', statusFilter, search],
     queryFn: () => apiClient.get(`/gate-passes?status=${statusFilter}&search=${search}`).then((r) => r.data),
@@ -28,9 +43,142 @@ export default function SecurityGatePassesPage() {
     }
   };
 
+  const handleSearchResident = async (query: string) => {
+    setSearchQuery(query);
+    if (query.length < 2) {
+      setResidents([]);
+      return;
+    }
+    setSearchingResidents(true);
+    try {
+      const res = await apiClient.get(`/users?role=RESIDENT&search=${query}`);
+      setResidents(res.data?.users || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSearchingResidents(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.residentId) {
+      toast.error('Please select a resident');
+      return;
+    }
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      await apiClient.post('/gate-passes', {
+        ...form,
+        expectedVisitDate: today,
+        expectedVisitTime: now,
+      });
+      toast.success('Gate pass initiated!');
+      setForm({ residentId: '', visitorName: '', visitorPhone: '', purpose: '' });
+      setSearchQuery('');
+      setResidents([]);
+      setShowForm(false);
+      queryClient.invalidateQueries({ queryKey: ['security-gate-passes'] });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to initiate pass');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Gate Passes</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold">Gate Passes</h1>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
+            showForm
+              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              : 'bg-slate-900 text-white hover:bg-slate-800'
+          }`}
+        >
+          {showForm ? 'Cancel' : '+ Initiate Pass'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card mb-5 p-5 border border-indigo-100 bg-indigo-50/20 rounded-2xl animate-fade-in">
+          <h2 className="text-sm font-bold text-slate-950 mb-3">Initiate Visitor Gate Pass</h2>
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            <div>
+              <label className="label text-xs font-bold text-slate-700">Search Resident (Name or Flat) *</label>
+              <input
+                className="input-field mt-1"
+                placeholder="Type name or flat to search..."
+                value={searchQuery}
+                onChange={(e) => handleSearchResident(e.target.value)}
+              />
+              {searchingResidents && <p className="text-[11px] text-gray-500 mt-1">Searching...</p>}
+              {residents.length > 0 && (
+                <div className="mt-1 max-h-40 overflow-y-auto border border-gray-200 bg-white rounded-lg shadow-sm divide-y">
+                  {residents.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => {
+                        setForm({ ...form, residentId: r.id });
+                        setSearchQuery(`${r.name} (Flat ${r.flatNumber || 'N/A'})`);
+                        setResidents([]);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 flex justify-between items-center"
+                    >
+                      <span className="font-semibold text-slate-800">{r.name}</span>
+                      <span className="text-gray-500 text-[11px]">Flat: {r.flatNumber || 'N/A'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {form.residentId && !residents.length && (
+                <p className="text-[11px] text-green-600 font-medium mt-1">✓ Resident selected</p>
+              )}
+            </div>
+
+            <div>
+              <label className="label text-xs font-bold text-slate-700">Visitor Name *</label>
+              <input
+                className="input-field mt-1"
+                required
+                placeholder="Full name of visitor"
+                value={form.visitorName}
+                onChange={(e) => setForm({ ...form, visitorName: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label text-xs font-bold text-slate-700">Visitor Phone</label>
+              <input
+                className="input-field mt-1"
+                type="tel"
+                placeholder="Phone number (optional)"
+                value={form.visitorPhone}
+                onChange={(e) => setForm({ ...form, visitorPhone: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label text-xs font-bold text-slate-700">Purpose</label>
+              <input
+                className="input-field mt-1"
+                placeholder="e.g. Delivery, Maintenance, Guest"
+                value={form.purpose}
+                onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+              />
+            </div>
+
+            <button type="submit" disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-all duration-200 mt-2">
+              {loading ? 'Initiating...' : 'Initiate Pass'}
+            </button>
+          </form>
+        </div>
+      )}
       <input className="input-field mb-3" placeholder="Search by visitor name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} />
 
       <div className="flex gap-2 mb-4 overflow-x-auto">

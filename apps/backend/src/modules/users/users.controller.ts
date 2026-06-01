@@ -13,15 +13,16 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @Roles(Role.SUPER_ADMIN, Role.FLAT_ASSOCIATION)
+  @Roles(Role.SUPER_ADMIN, Role.FLAT_ASSOCIATION, Role.SECURITY)
   findAll(
     @CurrentUser() user: any,
     @Query('flatId') flatId?: string,
     @Query('role') role?: Role,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('search') search?: string,
   ) {
-    return this.usersService.findAll(user, flatId, role, page ? +page : 1, limit ? +limit : 20);
+    return this.usersService.findAll(user, flatId, role, page ? +page : 1, limit ? +limit : 20, search);
   }
 
   @Get(':id')

@@ -41,6 +41,16 @@ export default function GatePassPage() {
     }
   };
 
+  const doAction = async (id: string, action: 'approve' | 'reject') => {
+    try {
+      await apiClient.patch(`/gate-passes/${id}/${action}`);
+      toast.success(action === 'approve' ? 'Pass approved!' : 'Pass rejected!');
+      queryClient.invalidateQueries({ queryKey: ['my-gate-passes'] });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Action failed');
+    }
+  };
+
   return (
     <div className="p-4 sm:p-5 animate-fade-in">
       {/* Header */}
@@ -180,8 +190,26 @@ export default function GatePassPage() {
                     )}
                   </div>
                 </div>
-                {/* Right: Status */}
-                <StatusBadge status={pass.status} />
+                {/* Right: Status & Actions */}
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <StatusBadge status={pass.status} />
+                  {pass.status === 'PENDING' && (
+                    <div className="flex gap-1.5 mt-1">
+                      <button
+                        onClick={() => doAction(pass.id, 'approve')}
+                        className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 active:scale-95 transition-all"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => doAction(pass.id, 'reject')}
+                        className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-rose-700 active:scale-95 transition-all"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}

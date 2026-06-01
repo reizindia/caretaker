@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Role, GatePassStatus } from '@prisma/client';
 
@@ -8,8 +8,26 @@ export class GatePassService {
 
   async create(user: any, tenantFlatId: string, dto: any) {
     const flatId = user.role === Role.SUPER_ADMIN ? tenantFlatId : user.flatId;
+    let residentId = user.id;
+
+    if (user.role === Role.SECURITY || user.role === Role.SUPER_ADMIN || user.role === Role.FLAT_ASSOCIATION) {
+      if (!dto.residentId) {
+        throw new BadRequestException('residentId is required when gate pass is initiated by staff');
+      }
+      residentId = dto.residentId;
+    }
+
     return this.prisma.gatePass.create({
-      data: { ...dto, flatId, residentId: user.id },
+      data: {
+        visitorName: dto.visitorName,
+        visitorPhone: dto.visitorPhone,
+        purpose: dto.purpose,
+        expectedVisitDate: dto.expectedVisitDate,
+        expectedVisitTime: dto.expectedVisitTime,
+        flatId,
+        residentId,
+        status: GatePassStatus.PENDING,
+      },
       include: { resident: { select: { name: true, flatNumber: true, phone: true } } },
     });
   }
@@ -57,26 +75,47 @@ export class GatePassService {
   }
 
   async approve(id: string, user: any) {
-    this.checkSecurityRole(user);
     const pass = await this.prisma.gatePass.findUnique({ where: { id } });
     if (!pass) throw new NotFoundException('Gate pass not found');
     if (user.role !== Role.SUPER_ADMIN && pass.flatId !== user.flatId) throw new ForbiddenException();
 
+    if (user.role === Role.RESIDENT) {
+      if (pass.residentId !== user.id) {
+        throw new ForbiddenException('You can only approve gate passes destined for your flat');
+      }
+    } else {
+      this.checkSecurityRole(user);
+    }
+
     return this.prisma.gatePass.update({
       where: { id },
-      data: { status: GatePassStatus.APPROVED, approvedBySecurityId: user.id },
+      data: { 
+        status: GatePassStatus.APPROVED, 
+        approvedBySecurityId: (user.role === Role.SECURITY || user.role === Role.SUPER_ADMIN) ? user.id : pass.approvedBySecurityId 
+      },
     });
   }
 
   async reject(id: string, user: any, notes?: string) {
-    this.checkSecurityRole(user);
     const pass = await this.prisma.gatePass.findUnique({ where: { id } });
     if (!pass) throw new NotFoundException('Gate pass not found');
     if (user.role !== Role.SUPER_ADMIN && pass.flatId !== user.flatId) throw new ForbiddenException();
 
+    if (user.role === Role.RESIDENT) {
+      if (pass.residentId !== user.id) {
+        throw new ForbiddenException('You can only reject gate passes destined for your flat');
+      }
+    } else {
+      this.checkSecurityRole(user);
+    }
+
     return this.prisma.gatePass.update({
       where: { id },
-      data: { status: GatePassStatus.REJECTED, approvedBySecurityId: user.id, notes },
+      data: { 
+        status: GatePassStatus.REJECTED, 
+        approvedBySecurityId: (user.role === Role.SECURITY || user.role === Role.SUPER_ADMIN) ? user.id : pass.approvedBySecurityId, 
+        notes 
+      },
     });
   }
 
