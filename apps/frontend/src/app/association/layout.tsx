@@ -39,6 +39,7 @@ export default function AssociationLayout({ children }: { children: React.ReactN
   return (
     <AppShell
       navItems={navItems}
+      theme="light"
       activeStyle="bg-slate-950 text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
       inactiveStyle="text-slate-500 hover:bg-slate-100 hover:text-slate-950"
       sidebarBg="bg-white border-r border-slate-100"

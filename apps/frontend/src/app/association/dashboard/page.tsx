@@ -47,7 +47,7 @@ export default function AssociationDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="card">
+        <div className="card card-padded">
           <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-950"><Package size={18} /> Recent Grocery Orders</h2>
           {!data?.recentGroceryOrders?.length ? <p className="text-sm text-slate-400">No orders yet</p> : (
             <div className="space-y-2">
@@ -60,7 +60,7 @@ export default function AssociationDashboard() {
             </div>
           )}
         </div>
-        <div className="card">
+        <div className="card card-padded">
           <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-950"><Home size={18} /> Recent Gate Passes</h2>
           {!data?.recentGatePasses?.length ? <p className="text-sm text-slate-400">No passes yet</p> : (
             <div className="space-y-2">

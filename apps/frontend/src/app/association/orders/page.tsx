@@ -25,7 +25,7 @@ export default function AssociationOrdersPage() {
       {tab === 'grocery' && (g ? <LoadingSpinner /> : !groceryOrders?.orders?.length ? <EmptyState title="No grocery orders" /> : (
         <div className="space-y-3">
           {groceryOrders.orders.map((order: any) => (
-            <div key={order.id} className="card">
+            <div key={order.id} className="card card-padded">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-medium">{order.resident?.name} · Flat {order.resident?.flatNumber}</p>
@@ -45,7 +45,7 @@ export default function AssociationOrdersPage() {
       {tab === 'food' && (f ? <LoadingSpinner /> : !foodOrders?.orders?.length ? <EmptyState title="No food orders" /> : (
         <div className="space-y-3">
           {foodOrders.orders.map((order: any) => (
-            <div key={order.id} className="card">
+            <div key={order.id} className="card card-padded">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-medium">{order.resident?.name} · Flat {order.resident?.flatNumber}</p>

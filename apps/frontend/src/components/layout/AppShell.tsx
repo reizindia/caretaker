@@ -19,6 +19,7 @@ interface AppShellProps {
   activeStyle?: string;
   inactiveStyle?: string;
   sidebarBg?: string;
+  theme?: 'dark' | 'light';
 }
 
 export default function AppShell({
@@ -29,6 +30,7 @@ export default function AppShell({
   activeStyle = 'bg-white text-slate-950 shadow-[0_2px_8px_rgba(0,0,0,0.08)]',
   inactiveStyle = 'text-slate-400 hover:bg-white/8 hover:text-white',
   sidebarBg = 'bg-slate-950',
+  theme = 'dark',
 }: AppShellProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -41,14 +43,23 @@ export default function AppShell({
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  const isLight = theme === 'light';
+  const borderClass = isLight ? 'border-slate-100' : 'border-white/8';
+  const closeBtnClass = isLight
+    ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-950'
+    : 'bg-white/10 text-white/80 hover:bg-white/18 hover:text-white';
+  const openBtnClass = isLight
+    ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-950'
+    : 'bg-white/10 text-white hover:bg-white/20';
+
   const sidebar = (
     <div className={`flex h-full flex-col ${sidebarBg}`}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
+      <div className={`flex items-center justify-between border-b ${borderClass} px-5 py-4`}>
         {header}
         <button
           onClick={() => setOpen(false)}
-          className="lg:hidden flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/80 transition hover:bg-white/18 hover:text-white"
+          className={`lg:hidden flex h-8 w-8 items-center justify-center rounded-xl transition ${closeBtnClass}`}
         >
           <X size={16} />
         </button>
@@ -69,8 +80,10 @@ export default function AppShell({
             >
               <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150 ${
                 isActive
-                  ? 'bg-slate-100 text-slate-950'
-                  : 'bg-white/6 text-slate-400 group-hover:bg-white/12 group-hover:text-white'
+                  ? isLight ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-950'
+                  : isLight
+                    ? 'bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-950'
+                    : 'bg-white/6 text-slate-400 group-hover:bg-white/12 group-hover:text-white'
               }`}>
                 <Icon size={15} strokeWidth={2.2} />
               </div>
@@ -84,7 +97,7 @@ export default function AppShell({
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-white/8 p-4">
+      <div className={`border-t ${borderClass} p-4`}>
         {footer}
       </div>
     </div>
@@ -119,11 +132,11 @@ export default function AppShell({
       {/* Main content */}
       <div className="flex flex-1 flex-col lg:ml-64">
         {/* Mobile top bar */}
-        <div className={`sticky top-0 z-30 flex items-center gap-3 border-b border-white/8 ${sidebarBg} px-4 py-3 lg:hidden`}
+        <div className={`sticky top-0 z-30 flex items-center gap-3 border-b ${borderClass} ${sidebarBg} px-4 py-3 lg:hidden`}
           style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}>
           <button
             onClick={() => setOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20"
+            className={`flex h-8 w-8 items-center justify-center rounded-xl transition ${openBtnClass}`}
           >
             <Menu size={18} />
           </button>

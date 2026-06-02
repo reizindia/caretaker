@@ -15,7 +15,7 @@ export default function AssociationGatePassesPage() {
       {isLoading ? <LoadingSpinner /> : !data?.passes?.length ? <EmptyState title="No gate passes" /> : (
         <div className="space-y-3">
           {data.passes.map((pass: any) => (
-            <div key={pass.id} className="card">
+            <div key={pass.id} className="card card-padded">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold">{pass.visitorName}</p>

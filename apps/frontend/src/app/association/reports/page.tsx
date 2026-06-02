@@ -20,7 +20,7 @@ export default function AssociationReportsPage() {
           { label: 'Service Bookings', value: data?.serviceBookings || 0, icon: '🔧', color: 'text-purple-600' },
           { label: 'Gate Passes', value: data?.gatePasses || 0, icon: '🎫', color: 'text-pink-600' },
         ].map((s) => (
-          <div key={s.label} className="card text-center">
+          <div key={s.label} className="card card-padded text-center">
             <div className="text-2xl mb-2">{s.icon}</div>
             <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
             <div className="text-xs text-gray-500 mt-1">{s.label}</div>
@@ -29,7 +29,7 @@ export default function AssociationReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card">
+        <div className="card card-padded">
           <h2 className="font-semibold mb-3">Recent Grocery Orders</h2>
           {!data?.recentGroceryOrders?.length ? <p className="text-sm text-gray-400">No orders yet</p> : data.recentGroceryOrders.map((o: any) => (
             <div key={o.id} className="flex justify-between items-center py-2 border-b last:border-0">
@@ -38,7 +38,7 @@ export default function AssociationReportsPage() {
             </div>
           ))}
         </div>
-        <div className="card">
+        <div className="card card-padded">
           <h2 className="font-semibold mb-3">Recent Food Orders</h2>
           {!data?.recentFoodOrders?.length ? <p className="text-sm text-gray-400">No orders yet</p> : data.recentFoodOrders.map((o: any) => (
             <div key={o.id} className="flex justify-between items-center py-2 border-b last:border-0">
