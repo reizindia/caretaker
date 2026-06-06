@@ -8,8 +8,7 @@ export class FlatService {
   constructor(private prisma: PrismaService) {}
 
   private tenantDomain(slug: string) {
-    const domain = process.env.APP_DOMAIN || process.env.NEXT_PUBLIC_APP_DOMAIN;
-    if (!domain) throw new Error('APP_DOMAIN or NEXT_PUBLIC_APP_DOMAIN must be set');
+    const domain = process.env.APP_DOMAIN || process.env.NEXT_PUBLIC_APP_DOMAIN || 'localhost:3000';
     return `${slug}.${domain}`;
   }
 

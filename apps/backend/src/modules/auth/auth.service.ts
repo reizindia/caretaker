@@ -31,7 +31,7 @@ export class AuthService {
       if (user.role === Role.SUPER_ADMIN || user.flat?.slug !== dto.tenantSlug) {
         throw new UnauthorizedException('This account does not belong to this apartment');
       }
-    } else if (user.role !== Role.SUPER_ADMIN) {
+    } else if (user.role !== Role.SUPER_ADMIN && process.env.NODE_ENV === 'production') {
       throw new UnauthorizedException('Use your apartment login URL');
     }
 
