@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
+import { processPayment } from '@/lib/payment';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
 import toast from 'react-hot-toast';
@@ -30,16 +31,39 @@ export default function ServicesPage() {
     if (!selectedSlot) return;
     setLoading(true);
     try {
-      await apiClient.post('/service-bookings', {
+      const response = await apiClient.post('/service-bookings', {
         serviceId: selectedService.id,
         timeSlotId: selectedSlot.id,
         notes,
       });
-      toast.success('Service booked successfully!');
-      setSelectedService(null);
-      setSelectedSlot(null);
-      setNotes('');
-      queryClient.invalidateQueries({ queryKey: ['slots'] });
+      const booking = response.data;
+      const hasPrice = selectedService.basePrice && Number(selectedService.basePrice) > 0;
+
+      if (hasPrice) {
+        await processPayment({
+          orderType: 'service',
+          dbOrderId: booking.id,
+          onSuccess: () => {
+            setSelectedService(null);
+            setSelectedSlot(null);
+            setNotes('');
+            queryClient.invalidateQueries({ queryKey: ['slots'] });
+          },
+          onFailure: () => {
+            setSelectedService(null);
+            setSelectedSlot(null);
+            setNotes('');
+            queryClient.invalidateQueries({ queryKey: ['slots'] });
+            toast.error('Booking is pending payment. You can complete it from My Orders.');
+          },
+        });
+      } else {
+        toast.success('Service booked successfully!');
+        setSelectedService(null);
+        setSelectedSlot(null);
+        setNotes('');
+        queryClient.invalidateQueries({ queryKey: ['slots'] });
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Booking failed');
     } finally {

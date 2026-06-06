@@ -70,6 +70,11 @@ export class ServicesService {
         throw new ConflictException('This time slot is fully booked');
       }
 
+      const service = await tx.service.findUnique({ where: { id: dto.serviceId } });
+      if (!service) throw new NotFoundException('Service not found');
+
+      const hasPrice = service.basePrice && Number(service.basePrice) > 0;
+
       const booking = await tx.serviceBooking.create({
         data: {
           flatId,
@@ -77,6 +82,7 @@ export class ServicesService {
           timeSlotId: dto.timeSlotId,
           residentId: user.id,
           notes: dto.notes,
+          status: hasPrice ? 'PENDING' : 'CONFIRMED',
         },
         include: {
           service: true,

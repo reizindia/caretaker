@@ -16,6 +16,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { MarketModule } from './modules/market/market.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { PaymentModule } from './modules/payment/payment.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 
 @Controller('health')
@@ -53,6 +54,7 @@ class HealthController {
     TenantModule,
     MarketModule,
     SettingsModule,
+    PaymentModule,
   ],
 })
 export class AppModule {

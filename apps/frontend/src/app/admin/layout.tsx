@@ -78,8 +78,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       inactiveStyle="text-slate-400 hover:bg-white/8 hover:text-white"
       sidebarBg="bg-slate-950"
       header={
-        <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-2 w-full">
           <BrandMark tone="dark" subtitle="Admin suite" />
+          {flats.length > 0 && (
+            <div className="mt-2 w-full">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block mb-1">
+                Active Flat / Apartment
+              </label>
+              <select
+                value={selectedFlat?.id || ''}
+                onChange={(e) => {
+                  const flat = flats.find((f: any) => f.id === e.target.value);
+                  if (flat) {
+                    setSelectedFlat({ id: flat.id, name: flat.name, slug: flat.slug });
+                  }
+                }}
+                className="w-full rounded-xl bg-white/5 border border-white/10 text-white text-xs font-semibold px-3 py-2 focus:border-white/20 focus:outline-none cursor-pointer transition-colors duration-150 hover:bg-white/8"
+              >
+                {flats.map((flat: any) => (
+                  <option key={flat.id} value={flat.id} className="text-slate-900 bg-white">
+                    {flat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       }
       footer={

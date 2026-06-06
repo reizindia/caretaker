@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
+import { processPayment } from '@/lib/payment';
 import StatusBadge from '@/components/shared/StatusBadge';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
@@ -18,6 +19,7 @@ const tabs = [
 
 export default function OrdersPage() {
   const [tab, setTab] = useState<Tab>('grocery');
+  const queryClient = useQueryClient();
 
   const { data: groceryOrders, isLoading: g } = useQuery({
     queryKey: ['my-grocery-orders-all'],
@@ -35,6 +37,19 @@ export default function OrdersPage() {
     queryKey: ['my-gate-passes-all'],
     queryFn: () => apiClient.get('/gate-passes').then((r) => r.data),
   });
+
+  const handlePayNow = async (orderType: 'grocery' | 'food' | 'service', dbOrderId: string) => {
+    await processPayment({
+      orderType,
+      dbOrderId,
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['my-grocery-orders-all'] });
+        queryClient.invalidateQueries({ queryKey: ['my-food-orders-all'] });
+        queryClient.invalidateQueries({ queryKey: ['my-bookings-all'] });
+      },
+    });
+  };
+
 
   return (
     <div className="p-4 sm:p-5 animate-fade-in">
@@ -95,6 +110,14 @@ export default function OrdersPage() {
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <p className="text-sm font-bold text-slate-950">₹{Number(order.totalAmount).toFixed(0)}</p>
                     <StatusBadge status={order.status} />
+                    {order.status === 'PENDING' && (
+                      <button
+                        onClick={() => handlePayNow('grocery', order.id)}
+                        className="mt-1 rounded-lg bg-blue-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-blue-700 transition active:scale-95"
+                      >
+                        Pay Now
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -134,6 +157,14 @@ export default function OrdersPage() {
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <p className="text-sm font-bold text-slate-950">₹{Number(order.totalAmount).toFixed(0)}</p>
                     <StatusBadge status={order.status} />
+                    {order.status === 'PENDING' && (
+                      <button
+                        onClick={() => handlePayNow('food', order.id)}
+                        className="mt-1 rounded-lg bg-blue-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-blue-700 transition active:scale-95"
+                      >
+                        Pay Now
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -149,18 +180,30 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-2.5">
             {bookings.bookings.map((bk: any) => (
-              <div key={bk.id} className="card flex items-center gap-3 p-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
-                  <Wrench size={16} strokeWidth={2} />
+              <div key={bk.id} className="card flex items-center justify-between gap-3 p-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                    <Wrench size={16} strokeWidth={2} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">{bk.service?.name}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400">
+                      <CalendarDays size={11} />
+                      {bk.timeSlot?.date} · {bk.timeSlot?.startTime} – {bk.timeSlot?.endTime}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800">{bk.service?.name}</p>
-                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400">
-                    <CalendarDays size={11} />
-                    {bk.timeSlot?.date} · {bk.timeSlot?.startTime} – {bk.timeSlot?.endTime}
-                  </p>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <StatusBadge status={bk.status} />
+                  {bk.status === 'PENDING' && bk.service?.basePrice && Number(bk.service?.basePrice) > 0 && (
+                    <button
+                      onClick={() => handlePayNow('service', bk.id)}
+                      className="rounded-lg bg-blue-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-blue-700 transition active:scale-95"
+                    >
+                      Pay Now
+                    </button>
+                  )}
                 </div>
-                <StatusBadge status={bk.status} />
               </div>
             ))}
           </div>

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import apiClient from '@/lib/api/client';
+import { processPayment } from '@/lib/payment';
 import { useCartStore } from '@/lib/store/cart.store';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import EmptyState from '@/components/shared/EmptyState';
@@ -38,14 +39,24 @@ export default function HotelMenuPage() {
     if (!hotelCartItems.length) return;
     setLoading(true);
     try {
-      await apiClient.post('/food/orders', {
+      const response = await apiClient.post('/food/orders', {
         hotelId,
         items: hotelCartItems.map((i) => ({ foodItemId: i.id, quantity: i.quantity })),
         notes,
       });
+      const order = response.data;
       clearFoodCart();
-      toast.success('Food order placed!');
-      router.push('/resident/orders');
+
+      await processPayment({
+        orderType: 'food',
+        dbOrderId: order.id,
+        onSuccess: () => {
+          router.push('/resident/orders');
+        },
+        onFailure: () => {
+          router.push('/resident/orders');
+        },
+      });
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to place order');
     } finally {

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/lib/store/cart.store';
 import apiClient from '@/lib/api/client';
+import { processPayment } from '@/lib/payment';
 import EmptyState from '@/components/shared/EmptyState';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
@@ -18,13 +19,23 @@ export default function CartPage() {
     if (!groceryItems.length) return;
     setLoading(true);
     try {
-      await apiClient.post('/grocery/orders', {
+      const response = await apiClient.post('/grocery/orders', {
         items: groceryItems.map((i) => ({ groceryItemId: i.id, quantity: i.quantity })),
         notes,
       });
+      const order = response.data;
       clearGroceryCart();
-      toast.success('Order placed successfully!');
-      router.push('/resident/orders');
+      
+      await processPayment({
+        orderType: 'grocery',
+        dbOrderId: order.id,
+        onSuccess: () => {
+          router.push('/resident/orders');
+        },
+        onFailure: () => {
+          router.push('/resident/orders');
+        },
+      });
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to place order');
     } finally {
